@@ -1,0 +1,70 @@
+#!/bin/bash
+ 
+NGINX_VERSION="1.13.9"
+FAKE_NGINX_NAME="Bozotic W3 Server"
+
+OPTS="
+ --with-threads
+ --with-http_ssl_module
+ --with-http_v2_module
+ --with-http_stub_status_module
+ --with-http_sub_module
+ --with-http_auth_request_module
+ --add-module=../headers-more-nginx-module
+"
+ 
+##################################################
+ 
+apt-get -y install build-essential libpcre3-dev libssl-dev git
+ 
+##################################################
+ 
+[ -d nginx ] || mkdir nginx
+cd nginx
+ 
+##################################################
+ 
+[ -f nginx-${NGINX_VERSION}.tar.gz ] || wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz"
+tar -xzf nginx-${NGINX_VERSION}.tar.gz
+ 
+if [ -d headers-more-nginx-module ] ; then
+        cd headers-more-nginx-module
+        git pull https://github.com/openresty/headers-more-nginx-module.git
+        cd ..
+else
+        git clone https://github.com/openresty/headers-more-nginx-module.git
+fi
+
+##################################################
+ 
+cd nginx-${NGINX_VERSION}
+
+sed -i "s/<center>nginx<\/center>/<center>${FAKE_NGINX_NAME}<\/center>/g" src/http/ngx_http_special_response.c
+
+make clean  
+ 
+./configure --prefix=/usr/local/nginx ${OPTS}
+
+make -j $(( $(grep -c ^processor /proc/cpuinfo) + 1 ))  
+ 
+[ $? -eq 0 ] || { echo "erreur compilation" ; exit 1 ; }
+ 
+##################################################
+ 
+service nginx stop
+PIDS=$(ps awx |grep " nginx: " |grep -v grep |awk '{print $1}')
+[ "${PIDS}" = "" ] || kill ${PIDS}
+ 
+##################################################
+ 
+grep -q "^DAEMON=" /etc/default/nginx || cat<<EOT>>/etc/default/nginx
+DAEMON="/usr/local/nginx/sbin/nginx"
+DAEMON_OPTS="-c /etc/nginx/nginx.conf"
+EOT
+
+##################################################
+ 
+make install && \
+service nginx start
+ 
+cd ..
