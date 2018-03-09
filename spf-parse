@@ -1,0 +1,31 @@
+#!/bin/bash
+
+################################################
+
+function parse {
+local d D
+D=$(dig ${1} txt |awk '{print tolower($0)}' |grep "v=spf" |grep "^${1//./\\.}" |sed 's/^.*v=spf. // ; s/"$//')
+for d in $(echo "${D}") ; do
+	if [[ ${d} =~ include: ]] || [[ ${d} =~ redirect: ]]; then
+		echo ${d}
+        	d=${d#*:}
+        	parse ${d}
+        else
+		echo ${d}
+	fi
+done
+}
+
+################################################
+
+if [ -z "${1}" ] ; then cat<<EOT
+Lecture récursive d'une déclaration SPF
+Exemples:
+spf-parse spf.protection.outlook.com
+spf-parse _spf.google.com
+EOT
+exit
+fi
+
+echo ${1}
+parse ${1}
