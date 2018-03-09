@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Extraction récursive de déclaration SPF
+# Testé sur Ubuntu 16.04 LTS
+
 ################################################
 
 function parse {
@@ -18,14 +21,7 @@ done
 
 ################################################
 
-if [ -z "${1}" ] ; then cat<<EOT
-Lecture récursive d'une déclaration SPF
-Exemples:
-spf-parse spf.protection.outlook.com
-spf-parse _spf.google.com
-EOT
-exit
-fi
+[ -z "${1}" ] && { echo "Usage: spf-parse <FQDN>" ; exit 1 ; }
 
 echo ${1}
 parse ${1}
