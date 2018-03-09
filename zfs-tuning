@@ -1,0 +1,154 @@
+#!/bin/bash
+
+# Tuning modules ZFS/Linux
+# Testé sur Ubuntu 16.04 LTS
+
+################################################
+
+CF=/etc/modprobe.d/zfs.conf
+SYS="/sys/module/zfs/parameters"
+
+###############################################################################################
+
+function check_param {
+[ -z ${1} ] && { echo "ERROR: <param> required" ; exit 1 ; }
+[ -f ${SYS}/${1} ] || { echo "ERROR: param '${1}' unknown" ; exit 1 ; }
+}
+
+function get_list {
+modinfo zfs |grep ^parm: |sed 's/^parm: *//g;s/:.*//g'
+}
+
+function explain {
+if [ -z ${1} ] ; then
+	modinfo zfs |grep ^parm: |sed 's/^parm: *//g ;s/:/ => /g'
+else
+	check_param ${1}
+	modinfo zfs |grep "^parm:" |sed 's/^parm: *//g; s/:/ => /g' |grep "^${1} =>" 
+fi
+}
+
+function get_value {
+check_param ${1}
+echo -n "${1} "
+cat ${SYS}/${1}
+}
+
+function pget_value {
+check_param ${1}
+if [ -f ${CF} ] ; then
+	grep -q " ${1}=" ${CF}
+	if [ $? -eq 0 ] ; then
+		sed "s/.*${1}=/${1}=/g ; s/\(=[0-9]*\)\(.*\)/\1/ ; s/=/ /g" ${CF}
+	fi
+fi
+}
+
+function set_value {
+[ -z ${2} ] && { echo "ERROR: <value> required" ; exit 1 ; }
+check_param ${1}
+[ "${1}" = "spa_config_path" ] && { echo "ERROR: forbidden" ; exit 1 ; }
+echo ${2} > ${SYS}/${1} 2>/dev/null
+}
+
+function pset_value {
+[ -z ${2} ] && { echo "ERROR: <value> required" ; exit 1 ; }
+check_param ${1}
+[ "${1}" = "spa_config_path" ] && { echo "ERROR: forbidden" ; exit 1 ; }
+touch ${CF}
+if [ "${2}" = "-r" ] ; then # suppression parametre
+	sed -i "s/ ${1}=[0-9]*//" ${CF}
+	grep -q "^options zfs$" ${CF}
+	if [ $? -eq 0 ] ; then # plus de parametre => supprimer fichier
+		rm ${CF}
+	fi
+else
+	grep -q "^options zfs " ${CF}
+	if [ $? -eq 0 ] ; then # parametres presents
+		grep -q " ${1}=" ${CF}
+		if [ $? -eq 0 ] ; then # ce parametre est present => remplacer
+			sed -i "s/${1}=[0-9]*/${1}=${2}/g" ${CF}
+		else # ce parametre est absent => ajouter
+			sed -i "s/\(.*\)/\1 ${1}=${2}/g" ${CF}
+		fi
+	else # pas de parametre => ajouter
+		echo "options zfs ${1}=${2}" > ${CF}
+	fi
+fi
+}
+
+###############################################################################################
+
+cmd=${1}
+param=${2}
+value=${3}
+
+###############################################################################################
+
+case ${cmd} in
+
+	list)
+		get_list
+	;;
+
+	explain)
+		explain ${param}
+	;;
+
+	get)
+		if [ -z ${param} ] ; then
+			for param in $(get_list) ; do
+				get_value ${param}
+			done
+		else
+			get_value ${param}
+		fi
+	;;
+
+	pget)
+		if [ -f ${CF} ] ; then
+			if [ -z ${param} ] ; then
+				sed "s/options zfs //" ${CF} |sed "s/ /\n/g" |sed "s/=/ /g"
+			else
+				pget_value ${param}
+			fi
+		fi
+	;;
+
+	set)
+		set_value ${param} ${value} 2>/dev/null
+		if [ $? -eq 0 ] ; then
+			get_value ${param}
+		else
+			echo "error, R/O parameter => use 'pset' (persistent set)"
+			exit 1
+		fi
+	;;
+
+	pset)
+		pset_value ${param} ${value}
+		pget_value ${param}
+		#update-initramfs -u -k all
+	;;
+
+	*)
+	cat<<EOF
+Usage: zfs-tuning <list|explain|get|set|pget|pset> [<args>]
+
+ list                      Shows parameters list
+ explain                   Explain all parameters
+ explain <param>           Explain parameter
+ get                       Get current value of all parameters
+ get <param>               Get current value of parameter
+ set <param> <value>       Set current value of parameter
+ pget                      Get persistent value of all parameters
+ pget <param>              Get persistent value of parameter
+ pset <param> <value>|-r   Set or remove persistent value of parameter
+
+EOF
+		exit 0
+	;;
+
+esac
+
+exit 0
