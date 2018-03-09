@@ -1,5 +1,10 @@
 #!/bin/bash
- 
+
+# Compilation et installation de Nginx
+# Testé sur Ubuntu 16.04 LTS
+
+##################################################
+
 NGINX_VERSION="1.13.9"
 FAKE_NGINX_NAME="Bozotic W3 Server"
 
