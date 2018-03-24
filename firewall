@@ -85,16 +85,16 @@ stop_V4_firewall () {
   $V4_SAVER > $V4_EMR_SAVE_FILE
   echo "IPv4 firewall saved to $V4_EMR_SAVE_FILE."
   echo -n "Stopping local IPv4 firewall : "
+  # We set the built-in chain policy to ACCEPT
+  for ch in INPUT OUTPUT FORWARD; do
+    $V4_IPTABLES -P $ch ACCEPT
+  done
   # We flush all the chains
   for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
     $V4_IPTABLES -F $ch
   done
   # We delete all the user-defined chains
   $V4_IPTABLES -X
-  # We set the built-in chain policy to ACCEPT
-  for ch in INPUT OUTPUT FORWARD; do
-    $V4_IPTABLES -P $ch ACCEPT
-  done
   echo "done."
 }
 
@@ -127,6 +127,9 @@ stop_V6_firewall () {
   $V6_SAVER > $V6_EMR_SAVE_FILE
   echo "IPv6 firewall saved to $V6_EMR_SAVE_FILE."
   echo -n "Stopping local IPv6 firewall : "
+  for ch in INPUT OUTPUT FORWARD; do
+    $V6_IPTABLES -P $ch ACCEPT
+  done
   # We flush all the chains
   for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
     $V6_IPTABLES -F $ch
@@ -134,9 +137,6 @@ stop_V6_firewall () {
   # We delete all the user-defined chains
   $V6_IPTABLES -X
   # We set the built-in chain policy to ACCEPT
-  for ch in INPUT OUTPUT FORWARD; do
-    $V6_IPTABLES -P $ch ACCEPT
-  done
   echo "done."
 } 
 
