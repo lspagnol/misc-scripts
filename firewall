@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/b
 
 ### BEGIN INIT INFO
 # Provides:             iptables
@@ -14,10 +14,11 @@
 # require linux kernel 2.4 or greater, iptables, iptables-restore and iptables-save functions
 
 ########################################################################
+# Parameters
 
 ## IPv4 parameters ##
 
-# file name for saving
+# File name for saving
 V4_SAVE_FILE=/etc/FirewallV4.sv
 V4_EMR_SAVE_FILE=/etc/FirewallV4.emr
 
@@ -38,10 +39,9 @@ V4_IPTABLES=/sbin/iptables
 V4_LOADER=/sbin/iptables-restore
 V4_SAVER=/sbin/iptables-save
 
-
 ## IPv6 parameters ##
 
-# file name for saving
+# File name for saving
 V6_SAVE_FILE=/etc/FirewallV6.sv
 V6_EMR_SAVE_FILE=/etc/FirewallV6.emr
 
@@ -69,17 +69,18 @@ PRE_SAVE=/etc/Firewall.presave
 POST_SAVE=/etc/Firewall.postsave
 
 # Start scripts
-PRE_START=/etc/Firewall_pre-start.sh
-POST_START=/etc/Firewall_post-start.sh
+PRE_START=/etc/Firewall.prestart
+POST_START=/etc/Firewall.poststart
 
 # Stop scripts
-PRE_STOP=/etc/Firewall_pre-stop.sh
-POST_STOP=/etc/Firewall_post-stop.sh
+PRE_STOP=/etc/Firewall.prestop
+POST_STOP=/etc/Firewall.poststop
 
-# return value
+# Return value
 rval=0
 
 ########################################################################
+# Checks
 
 # Are we root ?
 if [ $UID -ne 0 ]; then
@@ -87,19 +88,20 @@ if [ $UID -ne 0 ]; then
 	exit 1
 fi
 
-# are the iptables softwares present on the system ?
-if [ ! -x $V4_IPTABLES -o ! -x $V4_LOADER -o ! -x $V4_SAVER ]; then 
+# Are the iptables softwares present on the system ?
+if [ ! -x ${V4_IPTABLES} -o ! -x ${V4_LOADER} -o ! -x ${V4_SAVER} ]; then 
 	echo "iptables binaries are not present !"
 	exit 1
 fi
 
-# are the ip6tables softwares present on the system ?
-if [ ! -x $V6_IPTABLES -o ! -x $V6_LOADER -o ! -x $V6_SAVER ]; then 
+# Are the ip6tables softwares present on the system ?
+if [ ! -x ${V6_IPTABLES} -o ! -x ${V6_LOADER} -o ! -x ${V6_SAVER} ]; then 
 	echo "ip6tables binaries are not present !"
 	exit 1
 fi
 
 ########################################################################
+# Functions
 
 # This function append the data from the save file to the running firewall
 start_V4_firewall () {
@@ -125,7 +127,7 @@ echo -n "Stopping local IPv4 firewall : "
 for ch in INPUT OUTPUT FORWARD; do
 	$V4_IPTABLES -P $ch ACCEPT
 done
-# We flush all the chains
+# We fl all the chains
 for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
 	$V4_IPTABLES -F $ch
 done
@@ -169,7 +171,7 @@ echo -n "Stopping local IPv6 firewall : "
 for ch in INPUT OUTPUT FORWARD; do
 	$V6_IPTABLES -P $ch ACCEPT
 done
-# We flush all the chains
+# We fl all the chains
 for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
 	$V6_IPTABLES -F $ch
 done
@@ -214,9 +216,9 @@ save_V6_firewall
 }
 
 ########################################################################
-
 # Main
-case "$1" in
+
+case "${1}" in
 
 	# Global
 	start)
