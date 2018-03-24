@@ -1,0 +1,201 @@
+#!/bin/bash
+
+### BEGIN INIT INFO
+# Provides:             iptables
+# Required-Start:       
+# Required-Stop:        
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    start and stop the host personnal firewall
+### END INIT INFO
+
+# /etc/init.d/firewall: start and stop the host personnal firewall
+# This script change the packet filter state according to a file
+# require linux kernel 2.4 or greater, iptables, iptables-restore and iptables-save functions
+
+## IPv4 parameters
+# file name for saving
+V4_SAVE_FILE=/etc/Firewall.sv
+V4_EMR_SAVE_FILE=/etc/Firewall.emr
+
+# Save scripts
+V4_PRESAVE=/etc/Firewall.presave
+V4_POSTSAVE=/etc/Firewall.postsave
+
+# iptables software path
+V4_IPTABLES=/sbin/iptables
+V4_LOADER=/sbin/iptables-restore
+V4_SAVER=/sbin/iptables-save
+
+## IPv6 parameters
+# file name for saving
+V6_SAVE_FILE=/etc/FirewallV6.sv
+V6_EMR_SAVE_FILE=/etc/FirewallV6.emr
+
+# Save scripts
+V6_PRESAVE=/etc/FirewallV6.presave
+V6_POSTSAVE=/etc/FirewallV6.postsave
+
+# iptables software path
+V6_IPTABLES=/sbin/ip6tables
+V6_LOADER=/sbin/ip6tables-restore
+V6_SAVER=/sbin/ip6tables-save
+
+# return value
+rval=0
+
+# Are we root ?
+if [ $UID -ne 0 ]; then
+  echo "You must be root to use the firewall !"
+  exit 1
+fi
+
+# are the iptables softwares present on the system ?
+if [ ! -x $V4_IPTABLES -o ! -x $V4_LOADER -o ! -x $V4_SAVER ]; then 
+  echo "iptables binaries are not present !"
+  exit 1
+fi
+
+# are the ip6tables softwares present on the system ?
+if [ ! -x $V6_IPTABLES -o ! -x $V6_LOADER -o ! -x $V6_SAVER ]; then 
+  echo "ip6tables binaries are not present !"
+  exit 1
+fi
+
+# This function append the data from the save file to the running firewall
+start_V4_firewall () {
+  echo -n "Starting local IPv4 firewall : "
+  if [ -f $V4_SAVE_FILE ]; then
+    $V4_LOADER < $V4_SAVE_FILE
+    echo "done."
+  else
+    rval=1
+    echo "not done !"
+  fi
+}
+
+# This function clear the running firewall
+stop_V4_firewall () {
+  $V4_SAVER > $V4_EMR_SAVE_FILE
+  echo "IPv4 firewall saved to $V4_EMR_SAVE_FILE."
+  echo -n "Stopping local IPv4 firewall : "
+  # We flush all the chains
+  for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+    $V4_IPTABLES -F $ch
+  done
+  # We delete all the user-defined chains
+  $V4_IPTABLES -X
+  # We set the built-in chain policy to ACCEPT
+  for ch in INPUT OUTPUT FORWARD; do
+    $V4_IPTABLES -P $ch ACCEPT
+  done
+  echo "done."
+}
+
+# This function save the running firewave.
+save_V4_firewall () {
+  if [ -x $V4_PRESAVE ]; then $V4_PRESAVE; fi
+  if [ -f $V4_SAVE_FILE ]; then
+    mv $V4_SAVE_FILE $V4_SAVE_FILE~
+  fi
+  $V4_SAVER > $V4_SAVE_FILE
+  chmod o-rwx $V4_SAVE_FILE
+  echo "IPv4 firewall saved to $V4_SAVE_FILE."
+  if [ -x $V4_POSTSAVE ]; then $V4_POSTSAVE; fi
+}
+
+# This function append the data from the save file to the running firewall
+start_V6_firewall () {
+  echo -n "Starting local IPv6 firewall : "
+  if [ -f $V6_SAVE_FILE ]; then
+    $V6_LOADER < $V6_SAVE_FILE
+    echo "done."
+  else
+    rval=1
+    echo "not done !"
+  fi
+}
+
+# This function clear the running firewall
+stop_V6_firewall () {
+  $V6_SAVER > $V6_EMR_SAVE_FILE
+  echo "IPv6 firewall saved to $V6_EMR_SAVE_FILE."
+  echo -n "Stopping local IPv6 firewall : "
+  # We flush all the chains
+  for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+    $V6_IPTABLES -F $ch
+  done
+  # We delete all the user-defined chains
+  $V6_IPTABLES -X
+  # We set the built-in chain policy to ACCEPT
+  for ch in INPUT OUTPUT FORWARD; do
+    $V6_IPTABLES -P $ch ACCEPT
+  done
+  echo "done."
+} 
+
+# This function save the running firewave.
+save_V6_firewall () {
+  if [ -x $V6_PRESAVE ]; then $V6_PRESAVE; fi
+  if [ -f $V6_SAVE_FILE ]; then
+    mv $V6_SAVE_FILE $V6_SAVE_FILE~
+  fi
+  $V6_SAVER > $V6_SAVE_FILE
+  chmod o-rwx $V6_SAVE_FILE
+  echo "IPv6 firewall saved to $V6_SAVE_FILE."
+  if [ -x $V6_POSTSAVE ]; then $V6_POSTSAVE; fi
+}
+
+# main
+case "$1" in
+  start)
+    start_V4_firewall
+    start_V6_firewall
+    ;;
+  stop)
+    stop_V4_firewall
+    stop_V6_firewall
+    ;;
+  restart)
+    stop_V4_firewall
+    stop_V6_firewall
+    start_V4_firewall
+    start_V6_firewall
+    ;;
+  save)
+    save_V4_firewall
+    save_V6_firewall
+    ;;
+  start-v4)
+    start_V4_firewall
+    ;;
+  stop-v4)
+    stop_V4_firewall
+    ;;
+  restart-v4)
+    stop_V4_firewall
+    start_V4_firewall
+    ;;
+  save-v4)
+    save_V4_firewall
+    ;;
+  start-v6)
+    start_V6_firewall
+    ;;
+  stop-v6)
+    stop_V6_firewall
+    ;;
+  restart-v6)
+    stop_V6_firewall
+    start_V6_firewall
+    ;;
+  save-v6)
+    save_V6_firewall
+    ;;
+  *)
+    echo "Usage : $0 {start|stop|restart|save|start-v4|stop-v4|restart-v4|save-v4|start-v6|stop-v6|restart-v6|save-v6}"
+    exit 1
+    ;;
+esac
+
+exit $rval
