@@ -13,6 +13,8 @@
 # This script change the packet filter state according to a file
 # require linux kernel 2.4 or greater, iptables, iptables-restore and iptables-save functions
 
+########################################################################
+
 ## IPv4 parameters
 # file name for saving
 V4_SAVE_FILE=/etc/Firewall.sv
@@ -44,6 +46,8 @@ V6_SAVER=/sbin/ip6tables-save
 # return value
 rval=0
 
+########################################################################
+
 # Are we root ?
 if [ $UID -ne 0 ]; then
   echo "You must be root to use the firewall !"
@@ -61,6 +65,8 @@ if [ ! -x $V6_IPTABLES -o ! -x $V6_LOADER -o ! -x $V6_SAVER ]; then
   echo "ip6tables binaries are not present !"
   exit 1
 fi
+
+########################################################################
 
 # This function append the data from the save file to the running firewall
 start_V4_firewall () {
@@ -146,7 +152,9 @@ save_V6_firewall () {
   if [ -x $V6_POSTSAVE ]; then $V6_POSTSAVE; fi
 }
 
-# main
+########################################################################
+
+# Main
 case "$1" in
   start)
     start_V4_firewall
