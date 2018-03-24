@@ -218,52 +218,56 @@ save_V6_firewall
 # Main
 case "$1" in
 
-start)
-start_firewall
-;;
-stop)
-stop_firewall
-;;
-restart)
-stop_firewall
-start_firewall
-;;
-save)
-save_firewall
-;;
+	# Global
+	start)
+		start_firewall
+	;;
+	stop)
+		stop_firewall
+	;;
+	restart)
+		stop_firewall
+		start_firewall
+	;;
+	save)
+		save_firewall
+	;;
 
-start-v4)
-start_V4_firewall
-;;
-stop-v4)
-stop_V4_firewall
-;;
-restart-v4)
-stop_V4_firewall
-start_V4_firewall
-;;
-save-v4)
-save_V4_firewall
-;;
+	# IPv4
+	start-v4)
+		start_V4_firewall
+	;;
+	stop-v4)
+		stop_V4_firewall
+	;;
+	restart-v4)
+		stop_V4_firewall
+		start_V4_firewall
+	;;
+	save-v4)
+		save_V4_firewall
+	;;
 
-start-v6)
-start_V6_firewall
-;;
-stop-v6)
-stop_V6_firewall
-;;
-restart-v6)
-stop_V6_firewall
-start_V6_firewall
-;;
-save-v6)
-save_V6_firewall
-;;
+	# IPv6
+	start-v6)
+		start_V6_firewall
+	;;
+	stop-v6)
+		stop_V6_firewall
+	;;
+	restart-v6)
+		stop_V6_firewall
+		start_V6_firewall
+	;;
+	save-v6)
+		save_V6_firewall
+	;;
 
-*)
-echo "Usage : $0 {start|stop|restart|save|start-v4|stop-v4|restart-v4|save-v4|start-v6|stop-v6|restart-v6|save-v6}"
-exit 1
-;;
+	# Help
+	*)
+		echo "Usage : $0 {start|stop|restart|save|start-v4|stop-v4|restart-v4|save-v4|start-v6|stop-v6|restart-v6|save-v6}"
+		exit 1
+	;;
 
 esac
 
