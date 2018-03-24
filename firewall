@@ -139,7 +139,7 @@ echo "done."
 
 # This function save the running firewave.
 save_V4_firewall () {
-[ -x $V4_PRE_SAVE ] && $V4_PRE_SAVE
+[ -x ${V4_PRE_SAVE} ] && $V4_PRE_SAVE
 [ -f ${V4_SAVE_FILE} ] && mv ${V4_SAVE_FILE} ${V4_SAVE_FILE}~
 $V4_SAVER > ${V4_SAVE_FILE}
 chmod o-rwx ${V4_SAVE_FILE}
@@ -183,12 +183,12 @@ echo "done."
 
 # This function save the running firewave.
 save_V6_firewall () {
-[ -x $V6_PRE_SAVE ] && $V6_PRE_SAVE
+[ -x ${V6_PRE_SAVE} ] && $V6_PRE_SAVE
 [ -f ${V6_SAVE_FILE} ] && mv ${V6_SAVE_FILE} ${V6_SAVE_FILE}~
 $V6_SAVER > ${V6_SAVE_FILE}
 chmod o-rwx ${V6_SAVE_FILE}
 echo "IPv6 firewall saved to ${V6_SAVE_FILE}."
-[ -x $V6_POST_SAVE ] && $V6_POST_SAVE
+[ -x ${V6_POST_SAVE} ] && $V6_POST_SAVE
 }
 
 # This fonction start V4 and V6 firewall
