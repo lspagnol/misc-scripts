@@ -1,4 +1,4 @@
-#!/bin/b
+#!/bin/bash
 
 ### BEGIN INIT INFO
 # Provides:             iptables
@@ -11,10 +11,11 @@
 
 # /etc/init.d/firewall: start and stop the host personnal firewall
 # This script change the packet filter state according to a file
-# require linux kernel 2.4 or greater, iptables, iptables-restore and iptables-save functions
+# Requires linux kernel 2.4 or greater, iptables, iptables-restore and
+# iptables-save functions.
 
 ########################################################################
-# Parameters
+# Parameters (also available in pre/post scripts)
 
 ## IPv4 parameters ##
 
@@ -34,7 +35,7 @@ V4_POST_START=/etc/FirewallV4.poststart
 V4_PRE_STOP=/etc/FirewallV4.prestop
 V4_POST_STOP=/etc/FirewallV4.poststop
 
-# iptables software path
+# Iptables software path
 V4_IPTABLES=/sbin/iptables
 V4_LOADER=/sbin/iptables-restore
 V4_SAVER=/sbin/iptables-save
@@ -57,12 +58,12 @@ V6_POST_START=/etc/FirewallV6.poststart
 V6_PRE_STOP=/etc/FirewallV6.prestop
 V6_POST_STOP=/etc/FirewallV6.poststop
 
-# iptables software path
+# Iptables software path
 V6_IPTABLES=/sbin/ip6tables
 V6_LOADER=/sbin/ip6tables-restore
 V6_SAVER=/sbin/ip6tables-save
 
-## Global Parameters ##
+## Common parameters ##
 
 # Save scripts
 PRE_SAVE=/etc/Firewall.presave
@@ -103,116 +104,173 @@ fi
 ########################################################################
 # Functions
 
-# This function append the data from the save file to the running firewall
-start_V4_firewall () {
-echo -n "Starting local IPv4 firewall : "
-if [ -f ${V4_SAVE_FILE} ]; then
-	[ -x ${V4_PRE_START} ] && $V4_PRE_START
-	$V4_LOADER < ${V4_SAVE_FILE}
-	[ -x ${V4_POST_START} ] && $V4_POST_START
+# Append the data from the save file to the running firewall
+start_V4_firewall {
+
+	echo -n "Starting local IPv4 firewall : "
+
+	if [ -f ${V4_SAVE_FILE} ]; then
+
+		[ -x ${V4_PRE_START} ] && source ${V4_PRE_START}
+
+		$V4_LOADER < ${V4_SAVE_FILE}
+
+		[ -x ${V4_POST_START} ] && source ${V4_POST_START}
+
+		echo "done."
+
+	else
+
+		rval=1
+		echo "not done !"
+
+	fi
+
+}
+
+# Clear the running firewall
+stop_V4_firewall {
+
+	[ -x ${V4_PRE_STOP} ] && source ${V4_PRE_STOP}
+
+	$V4_SAVER > ${V4_EMR_SAVE_FILE}
+	echo "IPv4 firewall saved to ${V4_EMR_SAVE_FILE}."
+
+	echo -n "Stopping local IPv4 firewall : "
+
+	# We set the built-in chain policy to ACCEPT
+	for ch in INPUT OUTPUT FORWARD; do
+		$V4_IPTABLES -P ${ch} ACCEPT
+	done
+
+	# We flush all the chains
+	for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+		$V4_IPTABLES -F ${ch}
+	done
+
+	# We delete all the user-defined chains
+	$V4_IPTABLES -X
+
+	[ -x ${V4_POST_STOP} ] && source ${V4_POST_STOP}
+
 	echo "done."
-else
-	rval=1
-	echo "not done !"
-fi
+
 }
 
-# This function clear the running firewall
-stop_V4_firewall () {
-[ -x ${V4_PRE_STOP} ] && $V4_PRE_STOP
-$V4_SAVER > ${V4_EMR_SAVE_FILE}
-echo "IPv4 firewall saved to ${V4_EMR_SAVE_FILE}."
-echo -n "Stopping local IPv4 firewall : "
-# We set the built-in chain policy to ACCEPT
-for ch in INPUT OUTPUT FORWARD; do
-	$V4_IPTABLES -P $ch ACCEPT
-done
-# We fl all the chains
-for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
-	$V4_IPTABLES -F $ch
-done
-# We delete all the user-defined chains
-$V4_IPTABLES -X
-[ -x ${V4_POST_STOP} ] && $V4_POST_STOP
-echo "done."
+# Save the running firewall
+save_V4_firewall {
+
+	[ -x ${V4_PRE_SAVE} ] && source ${V4_PRE_SAVE}
+
+	[ -f ${V4_SAVE_FILE} ] && mv ${V4_SAVE_FILE} ${V4_SAVE_FILE}~
+
+	$V4_SAVER > ${V4_SAVE_FILE}
+	chmod o-rwx ${V4_SAVE_FILE}
+	echo "IPv4 firewall saved to ${V4_SAVE_FILE}."
+
+	[ -x ${V4_POST_SAVE} ] && source ${V4_POST_SAVE}
 }
 
-# This function save the running firewave.
-save_V4_firewall () {
-[ -x ${V4_PRE_SAVE} ] && $V4_PRE_SAVE
-[ -f ${V4_SAVE_FILE} ] && mv ${V4_SAVE_FILE} ${V4_SAVE_FILE}~
-$V4_SAVER > ${V4_SAVE_FILE}
-chmod o-rwx ${V4_SAVE_FILE}
-echo "IPv4 firewall saved to ${V4_SAVE_FILE}."
-[ -x ${V4_POST_SAVE} ] && $V4_POST_SAVE
+# Append the data from the save file to the running firewall
+start_V6_firewall {
+
+	echo -n "Starting local IPv6 firewall : "
+
+	if [ -f ${V6_SAVE_FILE} ]; then
+
+		[ -x ${V6_PRE_START} ] && source ${V6_PRE_START}
+
+		$V6_LOADER < ${V6_SAVE_FILE}
+
+		[ -x ${V6_POST_START} ] && source ${V6_POST_START}
+
+		echo "done."
+
+	else
+
+		rval=1
+
+		echo "not done !"
+	fi
 }
 
-# This function append the data from the save file to the running firewall
-start_V6_firewall () {
-echo -n "Starting local IPv6 firewall : "
-if [ -f ${V6_SAVE_FILE} ]; then
-	[ -x ${V6_PRE_START} ] && $V6_PRE_START
-	$V6_LOADER < ${V6_SAVE_FILE}
-	[ -x ${V6_POST_START} ] && $V6_POST_START
+# Clear the running firewall
+stop_V6_firewall {
+
+	[ -x ${V6_PRE_STOP} ] && source ${V6_PRE_STOP}
+
+	$V6_SAVER > ${V6_EMR_SAVE_FILE}
+	echo "IPv6 firewall saved to ${V6_EMR_SAVE_FILE}."
+
+	echo -n "Stopping local IPv6 firewall : "
+
+	# We set the built-in chain policy to ACCEPT
+	for ch in INPUT OUTPUT FORWARD; do
+		$V6_IPTABLES -P ${ch} ACCEPT
+	done
+
+	# We flush all the chains
+	for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+		$V6_IPTABLES -F ${ch}
+	done
+
+	# We delete all the user-defined chains
+	$V6_IPTABLES -X
+
+	[ -x ${V6_POST_STOP} ] && source ${V6_POST_STOP}
+
 	echo "done."
-else
-	rval=1
-	echo "not done !"
-fi
-}
-
-# This function clear the running firewall
-stop_V6_firewall () {
-[ -x ${V6_PRE_STOP} ] && $V6_PRE_STOP
-$V6_SAVER > ${V6_EMR_SAVE_FILE}
-echo "IPv6 firewall saved to ${V6_EMR_SAVE_FILE}."
-echo -n "Stopping local IPv6 firewall : "
-# We set the built-in chain policy to ACCEPT
-for ch in INPUT OUTPUT FORWARD; do
-	$V6_IPTABLES -P $ch ACCEPT
-done
-# We fl all the chains
-for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
-	$V6_IPTABLES -F $ch
-done
-# We delete all the user-defined chains
-$V6_IPTABLES -X
-[ -x ${V6_POST_STOP} ] && $V6_POST_STOP
-echo "done."
 } 
 
-# This function save the running firewave.
-save_V6_firewall () {
-[ -x ${V6_PRE_SAVE} ] && $V6_PRE_SAVE
-[ -f ${V6_SAVE_FILE} ] && mv ${V6_SAVE_FILE} ${V6_SAVE_FILE}~
-$V6_SAVER > ${V6_SAVE_FILE}
-chmod o-rwx ${V6_SAVE_FILE}
-echo "IPv6 firewall saved to ${V6_SAVE_FILE}."
-[ -x ${V6_POST_SAVE} ] && $V6_POST_SAVE
+# Save the running firewave.
+save_V6_firewall {
+
+	[ -x ${V6_PRE_SAVE} ] && source ${V6_PRE_SAVE}
+
+	[ -f ${V6_SAVE_FILE} ] && mv ${V6_SAVE_FILE} ${V6_SAVE_FILE}~
+
+	$V6_SAVER > ${V6_SAVE_FILE}
+	chmod o-rwx ${V6_SAVE_FILE}
+	echo "IPv6 firewall saved to ${V6_SAVE_FILE}."
+
+	[ -x ${V6_POST_SAVE} ] && source ${V6_POST_SAVE}
+
 }
 
-# This fonction start V4 and V6 firewall
-start_firewall () {
-[ -x ${PRE_START} && ${PRE_START}
-start_V4_firewall
-start_V6_firewall
-[ -x ${POST_START} && ${POST_START}
+# Start V4 and V6 firewall
+start_firewall {
+
+	[ -x ${PRE_START} && source ${PRE_START}
+
+	start_V4_firewall
+	start_V6_firewall
+
+	[ -x ${POST_START} && source ${POST_START}
+
 }
 
-# This function stop V4 and V6 firewall
-stop_firewall () {
-[ -x ${PRE_STOP} && ${PRE_STOP}
-stop_V4_firewall
-stop_V6_firewall
-[ -x ${POST_STOP} && ${POST_STOP}
+# Stop V4 and V6 firewall
+stop_firewall {
+
+	[ -x ${PRE_STOP} && source ${PRE_STOP}
+
+	stop_V4_firewall
+	stop_V6_firewall
+
+	[ -x ${POST_STOP} && source ${POST_STOP}
+
 }
 
-# This function save V4 and V6 firewall
-save_firewall () {
-[ -x ${PRE_SAVE} && ${PRE_SAVE}
-save_V4_firewall
-save_V6_firewall
-[ -x ${POST_SAVE} && ${POST_SAVE}
+# Save V4 and V6 firewall
+save_firewall {
+
+	[ -x ${PRE_SAVE} && source ${PRE_SAVE}
+
+	save_V4_firewall
+	save_V6_firewall
+
+	[ -x ${POST_SAVE} && source ${POST_SAVE}
+
 }
 
 ########################################################################
@@ -220,7 +278,7 @@ save_V6_firewall
 
 case "${1}" in
 
-	# Global
+	# IPv4 and IPv6
 	start)
 		start_firewall
 	;;
@@ -235,7 +293,7 @@ case "${1}" in
 		save_firewall
 	;;
 
-	# IPv4
+	# IPv4 only
 	start-v4)
 		start_V4_firewall
 	;;
@@ -250,7 +308,7 @@ case "${1}" in
 		save_V4_firewall
 	;;
 
-	# IPv6
+	# IPv6 only
 	start-v6)
 		start_V6_firewall
 	;;
@@ -273,4 +331,4 @@ case "${1}" in
 
 esac
 
-exit $rval
+exit ${rval}
