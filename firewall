@@ -63,7 +63,7 @@ V6_IPTABLES=/sbin/ip6tables
 V6_LOADER=/sbin/ip6tables-restore
 V6_SAVER=/sbin/ip6tables-save
 
-## Common parameters ##
+## Common parameters (IPv4 + IPv6) ##
 
 # Save scripts
 PRE_SAVE=/etc/Firewall.presave
@@ -131,6 +131,8 @@ start_V4_firewall {
 # Clear the running firewall
 stop_V4_firewall {
 
+	local ch
+
 	[ -x ${V4_PRE_STOP} ] && source ${V4_PRE_STOP}
 
 	$V4_SAVER > ${V4_EMR_SAVE_FILE}
@@ -144,7 +146,7 @@ stop_V4_firewall {
 	done
 
 	# We flush all the chains
-	for ch in `${V4_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+	for ch in $($V4_IPTABLES -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//") ; do
 		$V4_IPTABLES -F ${ch}
 	done
 
@@ -197,6 +199,8 @@ start_V6_firewall {
 # Clear the running firewall
 stop_V6_firewall {
 
+	local ch
+
 	[ -x ${V6_PRE_STOP} ] && source ${V6_PRE_STOP}
 
 	$V6_SAVER > ${V6_EMR_SAVE_FILE}
@@ -210,7 +214,7 @@ stop_V6_firewall {
 	done
 
 	# We flush all the chains
-	for ch in `${V6_IPTABLES} -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//"`; do
+	for ch in $($V6_IPTABLES -L | grep "^Chain" | sed -e "s/Chain\ //; s/\ (.*)$//") ; do
 		$V6_IPTABLES -F ${ch}
 	done
 
