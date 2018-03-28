@@ -105,17 +105,17 @@ fi
 # Functions
 
 # Append the data from the save file to the running firewall
-start_V4_firewall {
+function start_V4_firewall {
 
 	echo -n "Starting local IPv4 firewall : "
 
 	if [ -f ${V4_SAVE_FILE} ]; then
 
-		[ -x ${V4_PRE_START} ] && source ${V4_PRE_START}
+		[ -f ${V4_PRE_START} ] && source ${V4_PRE_START}
 
 		$V4_LOADER < ${V4_SAVE_FILE}
 
-		[ -x ${V4_POST_START} ] && source ${V4_POST_START}
+		[ -f ${V4_POST_START} ] && source ${V4_POST_START}
 
 		echo "done."
 
@@ -129,11 +129,11 @@ start_V4_firewall {
 }
 
 # Clear the running firewall
-stop_V4_firewall {
+function stop_V4_firewall {
 
 	local ch
 
-	[ -x ${V4_PRE_STOP} ] && source ${V4_PRE_STOP}
+	[ -f ${V4_PRE_STOP} ] && source ${V4_PRE_STOP}
 
 	$V4_SAVER > ${V4_EMR_SAVE_FILE}
 	echo "IPv4 firewall saved to ${V4_EMR_SAVE_FILE}."
@@ -153,16 +153,16 @@ stop_V4_firewall {
 	# We delete all the user-defined chains
 	$V4_IPTABLES -X
 
-	[ -x ${V4_POST_STOP} ] && source ${V4_POST_STOP}
+	[ -f ${V4_POST_STOP} ] && source ${V4_POST_STOP}
 
 	echo "done."
 
 }
 
 # Save the running firewall
-save_V4_firewall {
+function save_V4_firewall {
 
-	[ -x ${V4_PRE_SAVE} ] && source ${V4_PRE_SAVE}
+	[ -f ${V4_PRE_SAVE} ] && source ${V4_PRE_SAVE}
 
 	[ -f ${V4_SAVE_FILE} ] && mv ${V4_SAVE_FILE} ${V4_SAVE_FILE}~
 
@@ -170,21 +170,21 @@ save_V4_firewall {
 	chmod o-rwx ${V4_SAVE_FILE}
 	echo "IPv4 firewall saved to ${V4_SAVE_FILE}."
 
-	[ -x ${V4_POST_SAVE} ] && source ${V4_POST_SAVE}
+	[ -f ${V4_POST_SAVE} ] && source ${V4_POST_SAVE}
 }
 
 # Append the data from the save file to the running firewall
-start_V6_firewall {
+function start_V6_firewall {
 
 	echo -n "Starting local IPv6 firewall : "
 
 	if [ -f ${V6_SAVE_FILE} ]; then
 
-		[ -x ${V6_PRE_START} ] && source ${V6_PRE_START}
+		[ -f ${V6_PRE_START} ] && source ${V6_PRE_START}
 
 		$V6_LOADER < ${V6_SAVE_FILE}
 
-		[ -x ${V6_POST_START} ] && source ${V6_POST_START}
+		[ -f ${V6_POST_START} ] && source ${V6_POST_START}
 
 		echo "done."
 
@@ -197,11 +197,11 @@ start_V6_firewall {
 }
 
 # Clear the running firewall
-stop_V6_firewall {
+function stop_V6_firewall {
 
 	local ch
 
-	[ -x ${V6_PRE_STOP} ] && source ${V6_PRE_STOP}
+	[ -f ${V6_PRE_STOP} ] && source ${V6_PRE_STOP}
 
 	$V6_SAVER > ${V6_EMR_SAVE_FILE}
 	echo "IPv6 firewall saved to ${V6_EMR_SAVE_FILE}."
@@ -221,15 +221,15 @@ stop_V6_firewall {
 	# We delete all the user-defined chains
 	$V6_IPTABLES -X
 
-	[ -x ${V6_POST_STOP} ] && source ${V6_POST_STOP}
+	[ -f ${V6_POST_STOP} ] && source ${V6_POST_STOP}
 
 	echo "done."
 } 
 
 # Save the running firewave.
-save_V6_firewall {
+function save_V6_firewall {
 
-	[ -x ${V6_PRE_SAVE} ] && source ${V6_PRE_SAVE}
+	[ -f ${V6_PRE_SAVE} ] && source ${V6_PRE_SAVE}
 
 	[ -f ${V6_SAVE_FILE} ] && mv ${V6_SAVE_FILE} ${V6_SAVE_FILE}~
 
@@ -237,43 +237,43 @@ save_V6_firewall {
 	chmod o-rwx ${V6_SAVE_FILE}
 	echo "IPv6 firewall saved to ${V6_SAVE_FILE}."
 
-	[ -x ${V6_POST_SAVE} ] && source ${V6_POST_SAVE}
+	[ -f ${V6_POST_SAVE} ] && source ${V6_POST_SAVE}
 
 }
 
 # Start V4 and V6 firewall
-start_firewall {
+function start_firewall {
 
-	[ -x ${PRE_START} && source ${PRE_START}
+	[ -f ${PRE_START} ] && source ${PRE_START}
 
 	start_V4_firewall
 	start_V6_firewall
 
-	[ -x ${POST_START} && source ${POST_START}
+	[ -f ${POST_START} ] && source ${POST_START}
 
 }
 
 # Stop V4 and V6 firewall
-stop_firewall {
+function stop_firewall {
 
-	[ -x ${PRE_STOP} && source ${PRE_STOP}
+	[ -f ${PRE_STOP} ] && source ${PRE_STOP}
 
 	stop_V4_firewall
 	stop_V6_firewall
 
-	[ -x ${POST_STOP} && source ${POST_STOP}
+	[ -f ${POST_STOP} ] && source ${POST_STOP}
 
 }
 
 # Save V4 and V6 firewall
-save_firewall {
+function save_firewall {
 
-	[ -x ${PRE_SAVE} && source ${PRE_SAVE}
+	[ -f ${PRE_SAVE} ] && source ${PRE_SAVE}
 
 	save_V4_firewall
 	save_V6_firewall
 
-	[ -x ${POST_SAVE} && source ${POST_SAVE}
+	[ -f ${POST_SAVE} ] && source ${POST_SAVE}
 
 }
 
