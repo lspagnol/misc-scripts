@@ -4,4 +4,3 @@
 * **install-nginx_static-ssl-pcre-zlib** => Compilation et installation de Nginx + OpenSSL/PCRE/ZLIB statiques
 * **spf-parse** => Extraction récursive de déclaration SPF
 * **zfs-tuning** => Tuning modules ZFS/Linux
-* **firewall** => Mise en place règles netfilter (IPv4 + IPv6)
