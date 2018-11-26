@@ -62,7 +62,7 @@ raidz2=(${raidz2}) ; raidz2=${raidz2[@]}
 logs=(${logs}) ; logs=${logs[@]}
 cache=(${cache}) ; cache=${cache[@]}
 
-[ -z "${raidz}" ] || DRIVES="raidz"
+[ -z "${raidz}" ] || DRIVES="${DRIVES} raidz"
 [ -z "${raidz2}" ] || DRIVES="${DRIVES} raidz2"
 [ -z "${logs}" ] || DRIVES="${DRIVES} logs"
 [ -z "${cache}" ] || DRIVES="${DRIVES} cache"
