@@ -42,6 +42,9 @@ for (( i=0 ; i<${#L[@]} ; i++ )) ; do
 	esac
 
 	case ${t} in
+		raidz)
+			raidz="${raidz} ${L[$i]}"
+		;;
 		raidz2)
 			raidz2="${raidz2} ${L[$i]}"
 		;;
