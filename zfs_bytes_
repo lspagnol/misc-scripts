@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Munin Plugin: cumulated bandwidth on physical disks if ZFS pool
+
+########################################################################
+# INSTALL:
+# cp zfs_bytes_ /usr/local/share/munin/
+#
+# cat<<EOF>/etc/munin/plugin-conf.d/zfs
+# [zpool*]
+# user root
+#
+# [zfs*]
+# user root
+# EOF
+#
+# ln -fs /usr/local/share/munin/zfs_bytes_ /etc/munin/plugins/zfs_bytes_<pool-name>
+########################################################################
+
+# https://www.kernel.org/doc/Documentation/block/stat.txt
+
+myname=$(basename $0 | sed 's/^zfs_bytes_//g')
+
+L=$(zpool list ${myname} -vLH |awk '{print $1}')
+L=(${L})
+
+for (( i=0 ; i<${#L[@]} ; i++ )) ; do
+
+	case ${L[$i]} in
+		raidz)
+			t=raidz ; (( i++ ))
+		;;
+		raidz2)
+			t=raidz2 ; (( i++ ))
+		;;
+		logs)
+			t=logs ; (( i++ ))
+		;;
+		cache)
+			t=cache ; (( i++ ))
+		;;
+	esac
+
+	case ${t} in
+		raidz2)
+			raidz2="${raidz2} ${L[$i]}"
+		;;
+		logs)
+			logs="${logs} ${L[$i]}"
+		;;
+		cache)
+			cache="${cache} ${L[$i]}"
+		;;
+	esac
+done
+
+raidz=(${raidz}) ; raidz=${raidz[@]}
+raidz2=(${raidz2}) ; raidz2=${raidz2[@]}
+logs=(${logs}) ; logs=${logs[@]}
+cache=(${cache}) ; cache=${cache[@]}
+
+[ -z "${raidz}" ] || DRIVES="raidz"
+[ -z "${raidz2}" ] || DRIVES="${DRIVES} raidz2"
+[ -z "${logs}" ] || DRIVES="${DRIVES} logs"
+[ -z "${cache}" ] || DRIVES="${DRIVES} cache"
+
+# config
+if [ "$1" = "config" ]; then
+    echo "graph_title Disks bandwidth on ZFS pool ${myname}"
+    echo 'graph_args --base 1000 -l 0'
+    echo 'graph_vlabel bytes read (-) / written (+)'
+    echo 'graph_category zfs'
+    echo 'graph_info This graph shows the cumulated bandwidth on block devices'
+    echo -n 'graph_order'
+    for d in ${DRIVES}; do
+       echo -n ' '${d}'_read '${d}'_write'
+    done
+    echo
+    for d in ${DRIVES}; do
+       echo "${d}_read.label ${d}"
+       echo "${d}_read.type DERIVE"
+       echo "${d}_read.min 0"
+       echo "${d}_read.graph no"
+       echo "${d}_write.label ${d}"
+       echo "${d}_write.info Bandwidth on ${d}"
+       echo "${d}_write.type DERIVE"
+       echo "${d}_write.min 0"
+       echo "${d}_write.negative ${d}_read"
+    done
+exit 0
+fi
+
+for d in ${DRIVES} ; do
+	case ${d} in
+		raidz) DEVS=${raidz} ;;
+		raidz2) DEVS=${raidz2} ;;
+		logs) DEVS=${logs} ;;
+		cache) DEVS=${cache} ;;
+	esac
+	table=$(for dev in ${DEVS} ; do cat /sys/block/${dev}/stat ; done)
+	bytesR=$(( $(echo $(echo "$table" |awk '{print $3}') |sed 's/ /+/g') ))
+	bytesR=$(( ${bytesR} * 512 ))
+	bytesW=$(( $(echo $(echo "$table" |awk '{print $7}') |sed 's/ /+/g') ))
+	bytesW=$(( ${bytesW} * 512 ))
+	echo "${d}_read.value ${bytesR}"
+	echo "${d}_write.value ${bytesW}"
+done
+
+exit 0

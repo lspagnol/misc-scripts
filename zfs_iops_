@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Munin Plugin: cumulated IOps on physical disks of ZFS pool
+
+########################################################################
+# INSTALL:
+# cp zfs_iops_ /usr/local/share/munin/
+#
+# cat<<EOF>/etc/munin/plugin-conf.d/zfs
+# [zpool*]
+# user root
+#
+# [zfs*]
+# user root
+# EOF
+#
+# ln -fs /usr/local/share/munin/zfs_iops_ /etc/munin/plugins/zfs_iops_<pool-name>
+########################################################################
+
+# https://www.kernel.org/doc/Documentation/block/stat.txt
+
+
+myname=$(basename $0 | sed 's/^zfs_iops_//g')
+
+L=$(zpool list ${myname} -vLH |awk '{print $1}')
+L=(${L})
+
+for (( i=0 ; i<${#L[@]} ; i++ )) ; do
+
+	case ${L[$i]} in
+		raidz)
+			t=raidz ; (( i++ ))
+		;;
+		raidz2)
+			t=raidz2 ; (( i++ ))
+		;;
+		logs)
+			t=logs ; (( i++ ))
+		;;
+		cache)
+			t=cache ; (( i++ ))
+		;;
+	esac
+
+	case ${t} in
+		raidz2)
+			raidz2="${raidz2} ${L[$i]}"
+		;;
+		logs)
+			logs="${logs} ${L[$i]}"
+		;;
+		cache)
+			cache="${cache} ${L[$i]}"
+		;;
+	esac
+done
+
+raidz=(${raidz}) ; raidz=${raidz[@]}
+raidz2=(${raidz2}) ; raidz2=${raidz2[@]}
+logs=(${logs}) ; logs=${logs[@]}
+cache=(${cache}) ; cache=${cache[@]}
+
+[ -z "${raidz}" ] || DRIVES="raidz"
+[ -z "${raidz2}" ] || DRIVES="${DRIVES} raidz2"
+[ -z "${logs}" ] || DRIVES="${DRIVES} logs"
+[ -z "${cache}" ] || DRIVES="${DRIVES} cache"
+
+# config
+if [ "$1" = "config" ]; then
+    echo "graph_title Disks IOps on ZFS pool ${myname}"
+    echo 'graph_args --base 1000 -l 0'
+    echo 'graph_vlabel IOps read (-) / written (+)'
+    echo 'graph_category zfs'
+    echo 'graph_info This graph shows the cumulated IOps on block devices'
+    echo -n 'graph_order'
+    for d in ${DRIVES}; do
+       echo -n ' '${d}'_read '${d}'_write'
+    done
+    echo
+    for d in ${DRIVES}; do
+       echo "${d}_read.label ${d}"
+       echo "${d}_read.type DERIVE"
+       echo "${d}_read.min 0"
+       echo "${d}_read.graph no"
+       echo "${d}_write.label ${d}"
+       echo "${d}_write.info I/O on ${d}"
+       echo "${d}_write.type DERIVE"
+       echo "${d}_write.min 0"
+       echo "${d}_write.negative ${d}_read"
+    done
+exit 0
+fi
+
+for d in ${DRIVES} ; do
+	case ${d} in
+		raidz) DEVS=${raidz} ;;
+		raidz2) DEVS=${raidz2} ;;
+		logs) DEVS=${logs} ;;
+		cache) DEVS=${cache} ;;
+	esac
+	table=$(for dev in ${DEVS} ; do cat /sys/block/${dev}/stat ; done)
+	ioR=$(( $(echo $(echo "$table" |awk '{print $1}') |sed 's/ /+/g') ))
+	ioW=$(( $(echo $(echo "$table" |awk '{print $5}') |sed 's/ /+/g') ))
+	echo "${d}_read.value ${ioR}"
+	echo "${d}_write.value ${ioW}"
+done
+
+exit 0
