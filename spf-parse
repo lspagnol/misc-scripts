@@ -9,9 +9,10 @@ function parse {
 local d D
 D=$(dig ${1} txt |awk '{print tolower($0)}' |grep "v=spf" |grep "^${1//./\\.}" |sed 's/^.*v=spf. // ; s/"$//')
 for d in $(echo "${D}") ; do
-	if [[ ${d} =~ include: ]] || [[ ${d} =~ redirect: ]]; then
+	if [[ ${d} =~ include ]] || [[ ${d} =~ redirect ]]; then
 		echo ${d}
         	d=${d#*:}
+        	d=${d#*=}
         	parse ${d}
         else
 		echo ${d}
