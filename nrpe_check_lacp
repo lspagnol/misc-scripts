@@ -1,26 +1,8 @@
 #!/bin/bash
 
-# A very simple script for checking LACP bonding on GNU/Linux:
-# - check all bonding interfaces
-# - detect down link
-# - detect etherchannel misconfiguration on switch side
-
-# INSTALL:
-#
-# - Put this script on client side, for example:
-#    /usr/local/bin/nrpe_check_lacp
-#
-# - Add command on client side: (/etc/nagios/nrpe_local.cfg)
-#    command[check_lacp]=sudo /usr/local/sbin/nrpe_check_lacp
-#
-# - Give root rights on client side: (/etc/sudoers)
-#    nagios ALL=NOPASSWD:    /usr/local/sbin/nrpe_check_lacp
-
-########################################################################
-
 echo -n "BONDING "
 
-for bond in $(ls /proc/net/bonding) ; do
+for bond in $(ls /proc/net/bonding 2>/dev/null) ; do
 
 	# Nombre d'interfaces agrégées
 	nop=$(cat /proc/net/bonding/${bond} |grep -c "MII Status: ")
