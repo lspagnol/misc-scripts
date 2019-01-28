@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Tuning modules ZFS/Linux
-# Testé sur Ubuntu 16.04 LTS
+# Tuning modules ZFS/Linux => réglages à la volée et persistants
+# Testé sur Ubuntu 16.04 et 18.04
+# Doc complète des modules ZFS:
+# https://github.com/zfsonlinux/zfs/wiki/ZFS-on-Linux-Module-Parameters
 
 ################################################
 
