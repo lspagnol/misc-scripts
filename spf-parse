@@ -15,7 +15,14 @@ for d in $(echo "${D}") ; do
         	d=${d#*=}
         	parse ${d}
         else
-		echo ${d}
+		if [[ ${d} =~ mx: ]] ; then
+			n=${d#*:}
+			echo -n "${d} ("
+			echo -n $(dig A ${n} |grep "^${n//./\.}\." |grep "[[:space:]]*IN[[:space:]]*A[[:space:]]*" |awk '{print $5}')
+			echo ")"
+		else
+			echo ${d}
+		fi
 	fi
 done
 }
