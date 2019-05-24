@@ -1,0 +1,124 @@
+#!/bin/bash
+
+function number2HR {
+# Conversion de nombres: nombre -> multiple ${div} + unité
+# Séparateur décimales -> ","
+# $1 -> nombre
+
+if [ $(( ${1} / ${div} )) -lt 1 ] ; then
+	echo "${1}B"
+	return
+fi
+if [ $(( ${1} / ${div} / ${div} )) -lt 1 ] ; then
+	echo "$(echo "scale=1 ; ${1} / ${div}" |bc)KB" |sed 's/\./,/g'
+	return
+fi
+if [ $(( ${1} / ${div} / ${div} / ${div} )) -lt 1 ] ; then
+	echo "$(echo "scale=1 ; ${1} / ${div} / ${div}" |bc)MB" |sed 's/\./,/g'
+	return
+fi
+if [ $(( ${1} / ${div} / ${div} / ${div} / ${div} )) -lt 1 ] ; then
+	echo "$(echo "scale=1 ; ${1} / ${div} / ${div} / ${div}" |bc)GB" |sed 's/\./,/g'
+	return
+fi
+if [ $(( ${1} / ${div} / ${div} / ${div} / ${div} / ${div} )) -lt 1 ] ; then
+	echo "$(echo "scale=1 ; ${1} / ${div} / ${div} / ${div} / ${div}" |bc)TB" |sed 's/\./,/g'
+	return
+fi
+}
+
+###############################################################################################
+
+if [ -z "${1}" ] ; then
+cat<<EOT
+Usage: zwspeed [-10] [-c <count>] [-i <seconds>] <ZFS dataset>
+
+Args:
+ -10          : use ^10 (multiple of 1000) instead of ^2 (multiple of 1024)
+ -c <count>   : stop after <count>
+ -i <seconds> : interval is <seconds>
+
+Out: <dataset name> -- <dataset usage> -- <dataset write speed>
+     '(L P R)' Logical Physical Ratio
+
+* Example: 'zspeed BACKUP'
+BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 0B/s 0B/s 
+BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 3,7MB/s 3,6MB/s 1.02
+BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 42,0MB/s 41,3MB/s 1.01
+BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 20,5MB/s 20,0MB/s 1.02
+BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 26,0MB/s 25,6MB/s 1.01
+
+EOT
+exit
+fi
+
+###############################################################################################
+
+while [ ${#} -gt 0 ] ; do
+	case ${1} in
+		-10)
+			div=1000
+		;;
+		-c)
+			shift
+			count=${1}
+		;;
+		-i)
+			shift
+			sleep_int=${1}
+		;;
+		*)
+			dataset=${1}
+		;;
+	esac
+shift
+done
+
+[ -z "${div}" ] && div=1024
+[ -z "${sleep_int}" ] && sleep_int=1
+[ ! -z "${count}" ] && c=0
+
+###############################################################################################
+
+zfs list ${dataset} 2>/dev/null >/dev/null || { echo "Dataset '${dataset}' doesn't exists" ; exit ; }
+echo -e "${dataset} div=${div}, int=${sleep_int}s, count=${count:-\U221E}"
+
+while true ; do
+
+	D=$(zfs list -p -H -o used,logicalused ${dataset})
+	D=(${D})
+
+	P_new=${D[0]}
+	L_new=${D[1]}
+
+	P_newHR=$(number2HR ${P_new})
+	L_newHR=$(number2HR ${L_new})
+
+	[ -z "${P_old}" ] && P_old=${P_new}
+	[ -z "${L_old}" ] && L_old=${L_new}
+
+	P_delta=$(( ${P_new} - ${P_old} ))
+	L_delta=$(( ${L_new} - ${L_old} ))
+
+	P_speed=$(( ${P_delta} / ${sleep_int} ))
+	L_speed=$(( ${L_delta} / ${sleep_int} ))
+
+	P_speedHR=$(number2HR ${P_speed})
+	L_speedHR=$(number2HR ${L_speed})
+
+	used_ratio=$(echo "scale=2 ; ${L_new} / ${P_new}" |bc 2>/dev/null)
+	speed_ratio=$(echo "scale=2 ; ${L_speed} / ${P_speed}" |bc 2>/dev/null)
+
+	echo "${dataset} Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
+
+	if [ ! -z "${count}" ] ; then
+		(( c++ ))
+		[ ${c} -gt ${count} ] && exit
+	fi
+
+	P_old=${P_new}
+	L_old=${L_new}
+
+	sleep ${sleep_int}
+
+done

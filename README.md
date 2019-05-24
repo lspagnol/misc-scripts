@@ -8,3 +8,4 @@
 * **zfs_bytes_** => Munin Plugin (cumulated bandwidth on physical disks if ZFS pool)
 * **zfs_iops_** => Munin Plugin (cumulated IOps on physical disks of ZFS pool)
 * **zpool_iostat_** => Munin Plugin (bandwidth and IOps of ZFS pools)
+* **zwspeed** => ZFS logical/physical write speed monitoring
