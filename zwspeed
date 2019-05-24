@@ -109,7 +109,7 @@ while true ; do
 	used_ratio=$(echo "scale=2 ; ${L_new} / ${P_new}" |bc 2>/dev/null)
 	speed_ratio=$(echo "scale=2 ; ${L_speed} / ${P_speed}" |bc 2>/dev/null)
 
-	echo "${dataset} Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
+	echo "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
 
 	if [ ! -z "${count}" ] ; then
 		(( c++ ))
