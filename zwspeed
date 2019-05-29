@@ -31,12 +31,13 @@ fi
 
 if [ -z "${1}" ] ; then
 cat<<EOT
-Usage: zwspeed [-10] [-c <count>] [-i <seconds>] <ZFS dataset>
+Usage: zwspeed [-10] [-c <count>] [-i <seconds>] [-l] <ZFS dataset>
 
 Args:
  -10          : use ^10 (multiple of 1000) instead of ^2 (multiple of 1024)
  -c <count>   : stop after <count>
  -i <seconds> : interval is <seconds>
+ -l           : lsof file on dataset
 
 Out: <dataset name> -- <dataset usage> -- <dataset write speed>
      '(L P R)' Logical Physical Ratio
@@ -66,6 +67,10 @@ while [ ${#} -gt 0 ] ; do
 		-i)
 			shift
 			sleep_int=${1}
+		;;
+		-l )
+			shift
+			l=1
 		;;
 		*)
 			dataset=${1}
@@ -109,7 +114,12 @@ while true ; do
 	used_ratio=$(echo "scale=2 ; ${L_new} / ${P_new}" |bc 2>/dev/null)
 	speed_ratio=$(echo "scale=2 ; ${L_speed} / ${P_speed}" |bc 2>/dev/null)
 
-	echo "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
+	if [ -z "${l}" ] ; then
+		echo "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
+	else
+		echo -n "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio} -- "
+		lsof |grep "/${dataset}" |grep "REG" |sed "s/.*\/${dataset}/\/${dataset}/"
+	fi
 
 	if [ ! -z "${count}" ] ; then
 		(( c++ ))
