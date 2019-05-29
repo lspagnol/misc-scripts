@@ -39,10 +39,10 @@ Args:
  -i <seconds> : interval is <seconds>
  -l           : lsof file on dataset
 
-Out: <dataset name> -- <dataset usage> -- <dataset write speed>
+Out: <dataset name> -- <dataset usage> -- <dataset write speed> [ -- lsof ]
      '(L P R)' Logical Physical Ratio
 
-* Example: 'zspeed BACKUP'
+* Example: 'zwspeed BACKUP'
 BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 0B/s 0B/s 
 BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 3,7MB/s 3,6MB/s 1.02
 BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 42,0MB/s 41,3MB/s 1.01
