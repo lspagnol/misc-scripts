@@ -39,15 +39,15 @@ Args:
  -i <seconds> : interval is <seconds>
  -l           : lsof file on dataset
 
-Out: <dataset name> -- <dataset usage> -- <dataset write speed> [ -- lsof ]
+Out: <dataset usage> -- <dataset write speed> [ -- lsof ]
      '(L P R)' Logical Physical Ratio
 
 * Example: 'zwspeed BACKUP'
-BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 0B/s 0B/s 
-BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 3,7MB/s 3,6MB/s 1.02
-BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 42,0MB/s 41,3MB/s 1.01
-BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 20,5MB/s 20,0MB/s 1.02
-BACKUP -- Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 26,0MB/s 25,6MB/s 1.01
+Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 0B/s 0B/s 
+Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 3,7MB/s 3,6MB/s 1.02
+Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 42,0MB/s 41,3MB/s 1.01
+Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 20,5MB/s 20,0MB/s 1.02
+Used(L P R): 1,7TB 1,5TB 1.11 -- Speed(L P R): 26,0MB/s 25,6MB/s 1.01
 
 EOT
 exit
@@ -69,7 +69,6 @@ while [ ${#} -gt 0 ] ; do
 			sleep_int=${1}
 		;;
 		-l )
-			shift
 			l=1
 		;;
 		*)
@@ -86,7 +85,7 @@ done
 ###############################################################################################
 
 zfs list ${dataset} 2>/dev/null >/dev/null || { echo "Dataset '${dataset}' doesn't exists" ; exit ; }
-echo -e "${dataset} div=${div}, int=${sleep_int}s, count=${count:-\U221E}"
+echo -e "Dataset=${dataset}, div=${div}, int=${sleep_int}s, count=${count:-\U221E}"
 
 while true ; do
 
@@ -115,9 +114,9 @@ while true ; do
 	speed_ratio=$(echo "scale=2 ; ${L_speed} / ${P_speed}" |bc 2>/dev/null)
 
 	if [ -z "${l}" ] ; then
-		echo "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
+		echo "Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
 	else
-		echo -n "${dataset} -- Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio} -- "
+		echo -n "Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio} -- "
 		lsof |grep "/${dataset}" |grep "REG" |sed "s/.*\/${dataset}/\/${dataset}/"
 	fi
 
