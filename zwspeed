@@ -117,7 +117,8 @@ while true ; do
 		echo "Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio}"
 	else
 		echo -n "Used(L P R): ${L_newHR} ${P_newHR} ${used_ratio} -- Speed(L P R): ${L_speedHR}/s ${P_speedHR}/s ${speed_ratio} -- "
-		lsof |grep "/${dataset}" |grep "REG" |sed "s/.*\/${dataset/\/*/}/\/${dataset/\/*/}/"
+		echo -n $(lsof |grep "/${dataset}" |grep "REG" |sed "s/.*\/${dataset/\/*/}/\/${dataset/\/*/}/")
+		echo
 	fi
 
 	if [ ! -z "${count}" ] ; then
