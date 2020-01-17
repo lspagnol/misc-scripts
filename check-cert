@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ -z "${1}" ] ; then
+	echo "indiquer le FQDN"
+	exit
+fi
+
+##########################################################################
+
+key="${1}.key"
+req="${1}.req"
+if [ -f ${1}.crt ] ; then
+	crt="${1}.crt"
+else
+	crt="${1//_/.}.crt"
+fi
+
+##########################################################################
+
+echo "* ${n}"
+openssl x509 -in ${crt} -text -noout
+echo
+echo "Clés privées:"
+echo -n "req (${req}): " ; openssl req -noout -modulus -in ${req}  | openssl md5
+echo -n "crt (${crt}): " ; openssl x509 -noout -modulus -in ${crt}  | openssl md5
+echo -n "key (${key}): " ; openssl rsa -noout -modulus -in ${key}  | openssl md5
+echo
