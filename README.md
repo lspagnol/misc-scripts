@@ -9,3 +9,4 @@
 * **zfs_iops_** => Munin Plugin (cumulated IOps on physical disks of ZFS pool)
 * **zpool_iostat_** => Munin Plugin (bandwidth and IOps of ZFS pools)
 * **zwspeed** => ZFS logical/physical write speed monitoring
+* **check-cert** => vérification certificat (correspondance clé privée KEY/REQ/CRT)
