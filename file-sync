@@ -73,10 +73,12 @@ if [ $? -eq 0 ] ; then # Téléchargement réussi
                 # Vérification transfert
                 h_length=$(grep -i "^Content-Length:" ${TMDIR}/${file}.headers |tr -d "\r" |awk '{print $2}')
 		f_length=$(stat -c %s ${TMDIR}/${file})
-                h_length=${h_length:-0} ; f_length=${f_length:-0}
+
+                h_length=${h_length:-0}
+                f_length=${f_length:-0}
+
                 if [ ${h_length} -ne ${f_length} ] ; then # La taille du fichier ne correspond pas à celle indiquée dans l'entête.
                         echo "download error (h_length=${h_length}, f_length=${f_length})" |logger -t "file-sync"
-                        rmdir ${TMDIR}/lock
                         exit 2 # Erreur téléchargement, source pas mise à jour
                 fi
 
