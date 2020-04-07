@@ -2,23 +2,44 @@
 
 ###########################################################################
 
-SERVER=${1}
-SOURCE=${2}
+# Répertoire de stockage temporaire des headers
+TMDIR=/tmp/file-sync
 
-if [ -z "${SERVER}" ] || [ -z "${SOURCE}" ] ; then
-cat<<EOF
-Usage: file-sync [server] [source]
-       server: IP or IP:PORT
-       source: file name
-
-EOF
-exit 1
-fi
+# Répertoire de stockage des fichiers
+DLDIR=/var/cache/file-sync
 
 ###########################################################################
 
-TMDIR=/tmp/file-sync
-DLDIR=/var/cache/file-sync
+url=${1}
+
+u=${url##*//}
+
+host=${u%%/*}
+host=${host%:*}
+
+file=${u##*/}
+
+if [ "${1}" = "-h" ] || [ "${1}" = "--help" ] || [ -z "${host}" ] || [ -z "${file}" ] ; then
+cat<<EOF
+Usage: file-sync <URL>
+
+       URL -> http(s)://<host>(:<port>)(/<path>)/<file>
+
+              http://192.168.1.5/files/file.txt
+              https://myhost.tld/file.txt     
+              https://myhost.tld:4443/files/file.txt
+
+       <file> updates will be downloaded and available in ${DLDIR}/<file>
+
+       Return codes:
+       0   -> updated
+       1   -> not updated
+       2   -> not updated (download error)
+       3   -> arg error
+
+EOF
+exit 3
+fi
 
 ###########################################################################
 
@@ -28,32 +49,30 @@ DLDIR=/var/cache/file-sync
 ###########################################################################
 
 # Lecture ETag local (cache)
-ETag=$(grep "^ETag:" ${TMDIR}/${SOURCE}.headers 2>/dev/null |cut -d'"' -f2)
+ETag=$(grep "^ETag:" ${TMDIR}/${file}.headers 2>/dev/null |cut -d'"' -f2)
 
 # Hôte distant joignable ?
-ping -t5 -c1 ${SERVER%:*} 2>/dev/null >/dev/null
+ping -t5 -c1 ${host%:*} 2>/dev/null >/dev/null
 if [ $? -ne 0 ] ; then
-	echo "host '${SERVER}' is unreachable" |logger -t "file-sync"
+	echo "host '${host}' is unreachable" |logger -t "file-sync"
 	exit 2
 fi
 
-# Lecture ETag distant
-curl -m2 -sS -D ${TMDIR}/${SOURCE}.headers -H "If-None-Match: \"$ETag\"" http://${SERVER}/${SOURCE} 2> ${TMDIR}/${SOURCE}.error > ${TMDIR}/${SOURCE}
+# Téléchargement fichier et récupération headers HTTP pour lecture ETag distant
+curl -m2 -sS -D ${TMDIR}/${file}.headers -H "If-None-Match: \"$ETag\"" ${url} 2>/dev/null -o ${TMDIR}/${file}
 
-if [ $? -eq 0 ] ; then # Récupération ETag distant réussie
+if [ $? -eq 0 ] ; then # Téléchargement réussi
 
-	[ -f ${TMDIR}/${SOURCE}.error ] && rm ${TMDIR}/${SOURCE}.error
-
-        { echo -n "http://${SERVER}/${SOURCE}: " ; grep "^HTTP/" ${TMDIR}/${SOURCE}.headers |tr -d "\r" ; } |logger -t "file-sync"
+        { echo -n "${url}: " ; grep "^HTTP/" ${TMDIR}/${file}.headers |tr -d "\r" ; } |logger -t "file-sync"
 
         # Extraction résultat requète
-        grep -q "^HTTP.* 200 OK.*" ${TMDIR}/${SOURCE}.headers
+        grep -q "^HTTP.* 200 " ${TMDIR}/${file}.headers
 
         if [ $? -eq 0 ] ; then
 
                 # Vérification transfert
-                h_length=$(grep -i "^Content-Length:" ${TMDIR}/${SOURCE}.headers |tr -d "\r" |awk '{print $2}')
-                f_length=$(wc -c ${TMDIR}/${SOURCE} |awk '{print $1}')
+                h_length=$(grep -i "^Content-Length:" ${TMDIR}/${file}.headers |tr -d "\r" |awk '{print $2}')
+		f_length=$(stat -c %s ${TMDIR}/${file})
                 h_length=${h_length:-0} ; f_length=${f_length:-0}
                 if [ ${h_length} -ne ${f_length} ] ; then # La taille du fichier ne correspond pas à celle indiquée dans l'entête.
                         echo "download error (h_length=${h_length}, f_length=${f_length})" |logger -t "file-sync"
@@ -61,23 +80,30 @@ if [ $? -eq 0 ] ; then # Récupération ETag distant réussie
                         exit 2 # Erreur téléchargement, source pas mise à jour
                 fi
 
-                mv ${TMDIR}/${SOURCE} ${DLDIR}/${SOURCE}
+                mv ${TMDIR}/${file} ${DLDIR}/${file}
                 exit 0 # Source mise à jour
 
         else
 
-                rm ${TMDIR}/${SOURCE}
-                exit 1 # Source pas mise à jour
+		grep -q "^HTTP.* 304 " ${TMDIR}/${file}.headers
+
+		if [ $? -eq 0 ] ; then
+
+			# Pas de mise à jour de la source
+			[ -f ${TMDIR}/${file} ] && rm ${TMDIR}/${file}
+	        	exit 1
+	        
+	        else
+	        
+	        	# Erreur téléchargement
+			echo "download error (bad URL ?)" |logger -t "file-sync"
+	        	[ -f ${TMDIR}/${file} ] && rm ${TMDIR}/${file}
+	        	exit 2
+	        	
+	        fi
 
         fi
 
 fi
-
-if [ -f ${TMDIR}/${SOURCE}.error ] ; then
-	cat ${TMDIR}/${SOURCE}.error |logger -t "file-sync"
-	rm ${TMDIR}/${SOURCE}.error
-fi
-
-exit 2 # Erreur téléchargement, source pas mise à jour
 
 #-------------------------------------------------------------------------------
