@@ -1,0 +1,117 @@
+#!/bin/bash
+# -*- sh -*-
+
+: <<=cut
+
+=head1 NAME
+
+jitsi-videobridge-conferences - Jitsi conferences
+
+=head1 APPLICABLE SYSTEMS
+
+Any system with jitsi-videobridge installed and enabled statistics
+
+=head1 CONFIGURATION
+
+No configuration necessary.
+
+=head1 INTERPRETATION
+
+This plugin collects statistics from the jitsi-videobridge HTTP-API.
+
+=head1 MAGIC MARKERS
+
+  #%# family=manual
+  #%# capabilities=autoconf
+
+=head1 BUGS
+
+None known
+
+=head1 AUTHOR
+
+laurent.spagnol@univ-reims.fr
+
+=head1 LICENSE
+
+GPLv2
+
+=cut
+
+####################################################################################################
+# Adapted from https://gitlab.gwdg.de/bwegman1/Munin-Plugins/-/blob/master/plugins/jitsi-videobridge
+#
+# INSTALL:
+#
+#   mkdir /usr/local/share/munin
+#   cp jitsi-videobridge_ /usr/local/share/munin
+#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_network
+#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_conferences
+#   service munin-node restart
+#
+####################################################################################################
+
+. $MUNIN_LIBDIR/plugins/plugin.sh
+
+####################################################################################################
+
+function get_XSTATS {
+# Try with curl
+if [ -f /usr/bin/curl ] ; then
+	XSTATS=$(curl -s -f -m 3 http://localhost:8080/colibri/stats)
+	[ -z "${XSTATS}" ] && exit
+else
+	# Curl is removed when shibboleth is installed on Debian or Ubuntu
+	if [ -f /usr/bin/wget ] ; then
+		wget -T2 -t1 -q -O /tmp/jitsi-videobridge.stats http://localhost:8080/colibri/stats
+		if [ $? -eq 0 ] ; then
+			XSTATS=$(</tmp/jitsi-videobridge.stats 2>/dev/null)
+			[ -z "${XSTATS}" ] && exit
+		else
+			echo "Please install curl or wget"
+			exit 1
+		fi
+	fi
+fi
+}
+
+####################################################################################################
+
+if [ "$1" = "autoconf" ] ; then
+        echo yes
+        exit 0
+fi
+
+metrics=$(echo $(basename ${0}))
+metrics=${metrics#*_}
+
+case ${metrics} in
+	conferences)
+		title="conferences"
+		STATS="participants videochannels videostreams endpoints_sending_audio endpoints_sending_video conferences inactive_endpoints inactive_conferences"
+	;;
+	network)
+		title="network"
+		STATS="bit_rate_download bit_rate_upload"
+	;;
+esac
+
+if [ "$1" = "config" ]; then
+        echo "graph_title ${title}"
+        echo "graph_category jitsi-videobridge"
+        echo 'graph_args --base 1000 -l 0'
+	[ ${metrics} = "network" ] && echo "graph_vlabel kbit/s"
+fi
+
+get_XSTATS
+
+for stat in ${STATS} ; do
+  if [ "$1" = "config" ]; then
+    echo "jitsi_${stat}.label ${stat}"
+    echo "jitsi_${stat}.draw LINE2"
+  else
+    echo "jitsi_${stat}.value "$(echo ${XSTATS} | jq ".${stat}")
+  fi
+done
+
+exit 0
