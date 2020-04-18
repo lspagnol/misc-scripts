@@ -65,7 +65,7 @@ else
 	if [ -f /usr/bin/wget ] ; then
 		wget -T2 -t1 -q -O /tmp/jitsi-videobridge.stats http://localhost:8080/colibri/stats
 		if [ $? -eq 0 ] ; then
-			XSTATS=$(</tmp/jitsi-videobridge.stats 2>/dev/null)
+			XSTATS=$(cat /tmp/jitsi-videobridge.stats 2>/dev/null)
 			[ -z "${XSTATS}" ] && exit
 		else
 			echo "Please install curl or wget"
