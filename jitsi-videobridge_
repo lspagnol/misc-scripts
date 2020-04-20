@@ -100,7 +100,7 @@ if [ "$1" = "config" ]; then
         echo "graph_title ${title}"
         echo "graph_category jitsi-videobridge"
         echo 'graph_args --base 1000 -l 0'
-	[ ${metrics} = "network" ] && echo "graph_vlabel kbit/s"
+	[ ${metrics} = "network" ] && echo "graph_vlabel bit/s"
 fi
 
 get_XSTATS
@@ -110,7 +110,10 @@ for stat in ${STATS} ; do
     echo "jitsi_${stat}.label ${stat}"
     echo "jitsi_${stat}.draw LINE2"
   else
-    echo "jitsi_${stat}.value "$(echo ${XSTATS} | jq ".${stat}")
+    val=$(echo ${XSTATS} | jq ".${stat}")
+    val=${val:-0}
+    [ ${metrics} = "network" ] && val=$(( ${val} * 1024 ))
+    echo "jitsi_${stat}.value ${val}"
   fi
 done
 
