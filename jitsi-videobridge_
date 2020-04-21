@@ -97,34 +97,48 @@ case ${metrics} in
 esac
 
 if [ "$1" = "config" ]; then
-        echo "graph_title ${title}"
-        echo "graph_category jitsi-videobridge"
-        echo 'graph_args --base 1000 -l 0'
-	if [ ${metrics} = "network" ] ; then
+
 cat<<EOT
-graph_order jitsi_bit_rate_download jitsi_bit_rate_upload
-graph_vlabel bits in (-) / out (+) per second
-jitsi_bit_rate_download.graph no
-jitsi_bit_rate_download.min 0
-jitsi_bit_rate_download.label received
-jitsi_bit_rate_upload.negative jitsi_bit_rate_download
-jitsi_bit_rate_upload.min 0
-jitsi_bit_rate_upload.label bps
+graph_title ${title}
+graph_category jitsi-videobridge
+graph_args --base 1000 -l 0
 EOT
+
+	if [ ${metrics} = "network" ] ; then
+
+cat<<EOT
+graph_vlabel bits in (-) / out (+) per second
+graph_order bit_rate_download bit_rate_upload
+bit_rate_download.graph no
+bit_rate_download.min 0
+bit_rate_download.label received
+bit_rate_upload.negative bit_rate_download
+bit_rate_upload.min 0
+bit_rate_upload.label bps
+EOT
+
+	else
+
+cat<<EOT
+graph_vlabel Number
+graph_order conferences participants endpoints_sending_video endpoints_sending_audio videochannels videostreams inactive_endpoints inactive_conferences
+EOT
+
 	fi
+
 fi
 
 get_XSTATS
 
 for stat in ${STATS} ; do
   if [ "$1" = "config" ]; then
-    [ ${metrics} = "network" ] ||  echo "jitsi_${stat}.label ${stat}"
-    echo "jitsi_${stat}.draw LINE2"
+    [ ${metrics} = "network" ] ||  echo "${stat}.label ${stat}"
+    echo "${stat}.draw LINE2"
   else
     val=$(echo ${XSTATS} | jq ".${stat}")
     val=${val:-0}
     [ ${metrics} = "network" ] && val=$(( ${val} * 1024 ))
-    echo "jitsi_${stat}.value ${val}"
+    echo "${stat}.value ${val}"
   fi
 done
 
