@@ -87,11 +87,11 @@ metrics=${metrics#*_}
 
 case ${metrics} in
 	conferences)
-		title="conferences"
+		title="Conferences"
 		STATS="participants videochannels videostreams endpoints_sending_audio endpoints_sending_video conferences inactive_endpoints inactive_conferences"
 	;;
 	network)
-		title="network"
+		title="Network"
 		STATS="bit_rate_download bit_rate_upload"
 	;;
 esac
@@ -103,13 +103,12 @@ if [ "$1" = "config" ]; then
 	if [ ${metrics} = "network" ] ; then
 cat<<EOT
 graph_vlabel bits in (-) / out (+) per second
-bit_rate_download.graph no
-bit_rate_download.cdef down,8,*
-bit_rate_download.min 0
-bit_rate_upload.label bps
-bit_rate_upload.negative down
-bit_rate_upload.cdef up,8,*
-bit_rate_upload.min 0
+jitsi_bit_rate_download.graph no
+jitsi_bit_rate_download.min 0
+jitsi_bit_rate_download.label received
+jitsi_bit_rate_upload.negative jitsi_bit_rate_download
+jitsi_bit_rate_upload.min 0
+jitsi_bit_rate_upload.label bps
 EOT
 	fi
 fi
@@ -118,7 +117,7 @@ get_XSTATS
 
 for stat in ${STATS} ; do
   if [ "$1" = "config" ]; then
-    echo "jitsi_${stat}.label ${stat}"
+    [ ${metrics} = "network" ] ||  echo "jitsi_${stat}.label ${stat}"
     echo "jitsi_${stat}.draw LINE2"
   else
     val=$(echo ${XSTATS} | jq ".${stat}")
