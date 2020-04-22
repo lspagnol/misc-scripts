@@ -55,18 +55,18 @@ GPLv2
 
 ####################################################################################################
 
-function get_XSTATS {
+function get_JITSI_STATS {
 # Try with curl
 if [ -f /usr/bin/curl ] ; then
-	XSTATS=$(curl -s -f -m 3 http://localhost:8080/colibri/stats)
-	[ -z "${XSTATS}" ] && exit
+	JITSI_STATS=$(curl -s -f -m 3 http://localhost:8080/colibri/stats)
+	[ -z "${JITSI_STATS}" ] && exit
 else
 	# Curl is removed when shibboleth is installed on Debian or Ubuntu
 	if [ -f /usr/bin/wget ] ; then
 		wget -T2 -t1 -q -O /tmp/jitsi-videobridge.stats http://localhost:8080/colibri/stats
 		if [ $? -eq 0 ] ; then
-			XSTATS=$(cat /tmp/jitsi-videobridge.stats 2>/dev/null)
-			[ -z "${XSTATS}" ] && exit
+			JITSI_STATS=$(cat /tmp/jitsi-videobridge.stats 2>/dev/null)
+			[ -z "${JITSI_STATS}" ] && exit
 		else
 			echo "Please install curl or wget"
 			exit 1
@@ -85,28 +85,52 @@ fi
 metrics=$(echo $(basename ${0}))
 metrics=${metrics#*_}
 
+#/var/run/jitsi-videobridge/jitsi-videobridge.pid
+#root@ssds-jitsi:~# ps -p 809 -o %cpu,%mem
+#%CPU %MEM
+# 1.1 15.0
+#root@ssds-jitsi:~# top -b -n 2 -d 1 -p 809 | tail -1 | awk '{print $9" "$10}'
+#8,0 15,0
+
+#graph_args --upper-limit 100 -l 0
+#graph_vlabel %
+#graph_scale no
+
 case ${metrics} in
 	conferences)
-		title="Conferences"
 		STATS="participants videochannels videostreams endpoints_sending_audio endpoints_sending_video conferences inactive_endpoints inactive_conferences"
 	;;
 	network)
-		title="Network"
 		STATS="bit_rate_download bit_rate_upload"
 	;;
 esac
 
-if [ "$1" = "config" ]; then
+#-----------------------------------------------------------------------
+
+if [ "${1}" = "config" ] ; then
 
 cat<<EOT
-graph_title ${title}
 graph_category jitsi-videobridge
-graph_args --base 1000 -l 0
 EOT
 
-	if [ ${metrics} = "network" ] ; then
+	case ${metrics} in
 
+		conferences)
 cat<<EOT
+graph_title Conferences
+graph_args --base 1000 -l 0
+graph_vlabel number
+graph_order conferences participants endpoints_sending_video endpoints_sending_audio videochannels videostreams inactive_endpoints inactive_conferences
+EOT
+		for stat in ${STATS} ; do
+			echo "${stat}.label ${stat}"
+		done
+		;;
+
+		network)
+cat<<EOT
+graph_title Network
+graph_args --base 1000 -l 0
 graph_vlabel bits in (-) / out (+) per second
 graph_order bit_rate_download bit_rate_upload
 bit_rate_download.graph no
@@ -116,30 +140,52 @@ bit_rate_upload.negative bit_rate_download
 bit_rate_upload.min 0
 bit_rate_upload.label bps
 EOT
+		;;
 
-	else
-
+		system)
 cat<<EOT
-graph_vlabel Number
-graph_order conferences participants endpoints_sending_video endpoints_sending_audio videochannels videostreams inactive_endpoints inactive_conferences
+graph_title System
+graph_args --upper-limit 100 -l 0
+graph_vlabel %
+graph_scale no
+cpu.label cpu
+mem.label mem
 EOT
+		;;
 
-	fi
+	esac
+
+	exit 0
 
 fi
 
-get_XSTATS
+#-----------------------------------------------------------------------
 
-for stat in ${STATS} ; do
-  if [ "$1" = "config" ]; then
-    [ ${metrics} = "network" ] ||  echo "${stat}.label ${stat}"
-    echo "${stat}.draw LINE2"
-  else
-    val=$(echo ${XSTATS} | jq ".${stat}")
-    val=${val:-0}
-    [ ${metrics} = "network" ] && val=$(( ${val} * 1024 ))
-    echo "${stat}.value ${val}"
-  fi
-done
+case ${metrics} in
+
+	conferences|network)
+	
+		get_JITSI_STATS
+		
+		for stat in ${STATS} ; do
+			val=$(echo ${JITSI_STATS} | jq ".${stat}")
+		    val=${val:-0}
+		    [ ${metrics} = "network" ] && val=$(( ${val} * 1024 ))
+		    echo "${stat}.value ${val}"
+		done
+
+	;;
+
+	system)
+
+		pid=$(cat /var/run/jitsi-videobridge/jitsi-videobridge.pid)
+		val=$(top -b -n 2 -d 1 -p $pid | tail -1 | awk '{print $9" "$10}' |sed 's/,/./g')
+		val=(${val})
+		echo "cpu.value ${val[0]}"
+		echo "mem.value ${val[1]}"
+
+	;;
+
+esac
 
 exit 0
