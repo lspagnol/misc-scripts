@@ -38,22 +38,26 @@ GPLv2
 
 =cut
 
-####################################################################################################
+########################################################################
 # Adapted from https://gitlab.gwdg.de/bwegman1/Munin-Plugins/-/blob/master/plugins/jitsi-videobridge
 #
 # INSTALL:
 #
+#   wget -O jitsi-videobridge_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/jitsi-videobridge_
+#	chmod +x jitsi-videobridge_
 #   mkdir /usr/local/share/munin
 #   cp jitsi-videobridge_ /usr/local/share/munin
 #   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_network
 #   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_conferences
+#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_system
+#   echo -e "[jitsi-videobridge_system]\nuser root" > /etc/munin/plugin-conf.d/jitsi-videobridge_system
 #   service munin-node restart
 #
-####################################################################################################
+########################################################################
 
 . $MUNIN_LIBDIR/plugins/plugin.sh
 
-####################################################################################################
+########################################################################
 
 function get_JITSI_STATS {
 # Try with curl
@@ -75,7 +79,7 @@ else
 fi
 }
 
-####################################################################################################
+########################################################################
 
 if [ "$1" = "autoconf" ] ; then
         echo yes
@@ -84,17 +88,6 @@ fi
 
 metrics=$(echo $(basename ${0}))
 metrics=${metrics#*_}
-
-#/var/run/jitsi-videobridge/jitsi-videobridge.pid
-#root@ssds-jitsi:~# ps -p 809 -o %cpu,%mem
-#%CPU %MEM
-# 1.1 15.0
-#root@ssds-jitsi:~# top -b -n 2 -d 1 -p 809 | tail -1 | awk '{print $9" "$10}'
-#8,0 15,0
-
-#graph_args --upper-limit 100 -l 0
-#graph_vlabel %
-#graph_scale no
 
 case ${metrics} in
 	conferences)
@@ -105,7 +98,7 @@ case ${metrics} in
 	;;
 esac
 
-#-----------------------------------------------------------------------
+########################################################################
 
 if [ "${1}" = "config" ] ; then
 
@@ -159,7 +152,7 @@ EOT
 
 fi
 
-#-----------------------------------------------------------------------
+########################################################################
 
 case ${metrics} in
 
@@ -187,5 +180,7 @@ case ${metrics} in
 	;;
 
 esac
+
+########################################################################
 
 exit 0
