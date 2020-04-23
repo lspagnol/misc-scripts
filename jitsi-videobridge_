@@ -44,7 +44,7 @@ GPLv2
 # INSTALL:
 #
 #   wget -O jitsi-videobridge_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/jitsi-videobridge_
-#	chmod +x jitsi-videobridge_
+#   chmod +x jitsi-videobridge_
 #   mkdir /usr/local/share/munin
 #   cp jitsi-videobridge_ /usr/local/share/munin
 #   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_network
