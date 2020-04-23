@@ -178,7 +178,7 @@ case ${metrics} in
 		cpu=${val[0]}
 		mem=${val[1]}
 		ncpu=$(cat /proc/cpuinfo |grep -c '^processor')
-		cpu=$(echo "scale=1 ; ${cpu}/${ncpu}" |bc |sed 's/^./0./g')
+		cpu=$(echo "scale=1 ; ${cpu}/${ncpu}" |bc |sed 's/^\./0./g')
 		echo "cpu.value ${cpu}"
 		echo "mem.value ${mem}"
 
