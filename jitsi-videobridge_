@@ -43,6 +43,7 @@ GPLv2
 #
 # INSTALL:
 #
+#   apt -y install jq bc wget
 #   wget -O jitsi-videobridge_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/jitsi-videobridge_
 #   chmod +x jitsi-videobridge_
 #   mkdir /usr/local/share/munin
@@ -174,8 +175,12 @@ case ${metrics} in
 		pid=$(cat /var/run/jitsi-videobridge/jitsi-videobridge.pid)
 		val=$(top -b -n 2 -d 1 -p $pid | tail -1 | awk '{print $9" "$10}' |sed 's/,/./g')
 		val=(${val})
-		echo "cpu.value ${val[0]}"
-		echo "mem.value ${val[1]}"
+		cpu=${val[0]}
+		mem=${val[1]}
+		ncpu=$(cat /proc/cpuinfo |grep -c '^processor')
+		cpu=$(echo "scale=1 ; ${cpu}/${ncpu}" |bc)
+		echo "cpu.value ${cpu}"
+		echo "mem.value ${mem}"
 
 	;;
 
