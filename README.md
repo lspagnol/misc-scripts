@@ -11,4 +11,5 @@
 * **zwspeed** => ZFS logical/physical write speed monitoring
 * **check-cert** => vérification certificat (correspondance clé privée KEY/REQ/CRT)
 * **file-sync** => téléchargement fichier avec contrôle code retour
-* **jitsi-videobridge_** => Plugin Munin pour Jitsi Meet
+* **jitsi-videobridge_** => Plugin Munin pour Jitsi Meet (videobridges)
+* **jitsi-videobridge_summary** => Plugin Munin pour Jitsi Meet (serveur principal cluster)

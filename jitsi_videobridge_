@@ -1,57 +1,32 @@
 #!/bin/bash
-# -*- sh -*-
-
-: <<=cut
-
-=head1 NAME
-
-jitsi-videobridge-conferences - Jitsi conferences
-
-=head1 APPLICABLE SYSTEMS
-
-Any system with jitsi-videobridge installed and enabled statistics
-
-=head1 CONFIGURATION
-
-No configuration necessary.
-
-=head1 INTERPRETATION
-
-This plugin collects statistics from the jitsi-videobridge HTTP-API.
-
-=head1 MAGIC MARKERS
-
-  #%# family=manual
-  #%# capabilities=autoconf
-
-=head1 BUGS
-
-None known
-
-=head1 AUTHOR
-
-laurent.spagnol@univ-reims.fr
-
-=head1 LICENSE
-
-GPLv2
-
-=cut
 
 ########################################################################
+# AUTHOR laurent.spagnol@univ-reims.fr
+# LICENCE GPLv2
 # Adapted from https://gitlab.gwdg.de/bwegman1/Munin-Plugins/-/blob/master/plugins/jitsi-videobridge
 #
-# INSTALL:
+# INSTALLATION:
 #
-#   apt -y install jq bc wget
-#   wget -O jitsi-videobridge_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/jitsi-videobridge_
-#   chmod +x jitsi-videobridge_
+# This plugin needs jq, bc, curl or wget
+# It also needs rest api of videobridge
+# /etc/jitsi/videobridge/config -> JVB_OPTS="--apis=rest, "
+#
+#   apt -y install jq bc
+#
+#   apt -y install curl
+#
+#   Curl is removed when shibboleth is installed on Debian or Ubuntu, so install wget
+#   apt -y install wget
+#
+#   wget -O jitsi_videobridge_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/jitsi_videobridge_
+#   chmod +x jitsi_videobridge_
 #   mkdir /usr/local/share/munin
-#   cp jitsi-videobridge_ /usr/local/share/munin
-#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_network
-#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_conferences
-#   ln -s /usr/local/share/munin/jitsi-videobridge_ /etc/munin/plugins/jitsi-videobridge_system
-#   echo -e "[jitsi-videobridge_system]\nuser root" > /etc/munin/plugin-conf.d/jitsi-videobridge_system
+#   cp jitsi_videobridge_ /usr/local/share/munin
+#   ln -s /usr/local/share/munin/jitsi_videobridge_ /etc/munin/plugins/jitsi_videobridge_network
+#   ln -s /usr/local/share/munin/jitsi_videobridge_ /etc/munin/plugins/jitsi_videobridge_conferences
+#   ln -s /usr/local/share/munin/jitsi_videobridge_ /etc/munin/plugins/jitsi_videobridge_videostreams
+#   ln -s /usr/local/share/munin/jitsi_videobridge_ /etc/munin/plugins/jitsi_videobridge_system
+#   echo -e "[jitsi_videobridge_system]\nuser root" > /etc/munin/plugin-conf.d/jitsi-videobridge
 #   service munin-node restart
 #
 ########################################################################
@@ -60,20 +35,18 @@ GPLv2
 
 ########################################################################
 
-function get_JITSI_STATS {
+function get_jitsi_stats {
 # Try with curl
 if [ -f /usr/bin/curl ] ; then
-	JITSI_STATS=$(curl -s -f -m 3 http://localhost:8080/colibri/stats)
-	[ -z "${JITSI_STATS}" ] && exit
+	jitsi_stats=$(curl -s -f -m 3 http://localhost:8080/colibri/stats)
+	[ -z "${jitsi_stats}" ] && exit
 else
-	# Curl is removed when shibboleth is installed on Debian or Ubuntu
 	if [ -f /usr/bin/wget ] ; then
 		wget -T2 -t1 -q -O /tmp/jitsi-videobridge.stats http://localhost:8080/colibri/stats
 		if [ $? -eq 0 ] ; then
-			JITSI_STATS=$(cat /tmp/jitsi-videobridge.stats 2>/dev/null)
-			[ -z "${JITSI_STATS}" ] && exit
+			jitsi_stats=$(cat /tmp/jitsi-videobridge.stats 2>/dev/null)
+			[ -z "${jitsi_stats}" ] && exit
 		else
-			echo "Please install curl or wget"
 			exit 1
 		fi
 	fi
@@ -87,15 +60,20 @@ if [ "$1" = "autoconf" ] ; then
         exit 0
 fi
 
+########################################################################
+
 metrics=$(echo $(basename ${0}))
-metrics=${metrics#*_}
+metrics=${metrics##*_}
 
 case ${metrics} in
 	conferences)
-		STATS="participants videochannels videostreams endpoints_sending_audio endpoints_sending_video conferences inactive_endpoints inactive_conferences"
+		stats="conferences participants endpoints_sending_video endpoints_sending_audio videochannels inactive_endpoints inactive_conferences"
+	;;
+	videostreams)
+		stats="videostreams"
 	;;
 	network)
-		STATS="bit_rate_download bit_rate_upload"
+		stats="bit_rate_download bit_rate_upload"
 	;;
 esac
 
@@ -114,11 +92,20 @@ cat<<EOT
 graph_title Conferences
 graph_args --base 1000 -l 0
 graph_vlabel number
-graph_order conferences participants endpoints_sending_video endpoints_sending_audio videochannels videostreams inactive_endpoints inactive_conferences
+graph_order ${stats}
 EOT
-		for stat in ${STATS} ; do
+		for stat in ${stats} ; do
 			echo "${stat}.label ${stat}"
 		done
+		;;
+
+		videostreams)
+cat<<EOT
+graph_title Videostreams
+graph_args --base 1000 -l 0
+graph_vlabel number
+videostreams.label videostreams
+EOT
 		;;
 
 		network)
@@ -126,7 +113,7 @@ cat<<EOT
 graph_title Network
 graph_args --base 1000 -l 0
 graph_vlabel bits in (-) / out (+) per second
-graph_order bit_rate_download bit_rate_upload
+graph_order ${stats}
 bit_rate_download.graph no
 bit_rate_download.min 0
 bit_rate_download.label received
@@ -157,12 +144,12 @@ fi
 
 case ${metrics} in
 
-	conferences|network)
+	conferences|videostreams|network)
 	
-		get_JITSI_STATS
+		get_jitsi_stats
 		
-		for stat in ${STATS} ; do
-			val=$(echo ${JITSI_STATS} | jq ".${stat}")
+		for stat in ${stats} ; do
+			val=$(echo ${jitsi_stats} | jq ".${stat}")
 		    val=${val:-0}
 		    [ ${metrics} = "network" ] && val=$(( ${val} * 1024 ))
 		    echo "${stat}.value ${val}"
