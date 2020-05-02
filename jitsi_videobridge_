@@ -67,7 +67,7 @@ metrics=${metrics##*_}
 
 case ${metrics} in
 	conferences)
-		stats="conferences participants endpoints_sending_video endpoints_sending_audio videochannels inactive_endpoints inactive_conferences"
+		stats="conferences participants videochannels endpoints_sending_video endpoints_sending_audio inactive_endpoints inactive_conferences"
 	;;
 	videostreams)
 		stats="videostreams"

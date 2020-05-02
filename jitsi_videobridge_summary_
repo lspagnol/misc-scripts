@@ -39,7 +39,7 @@ metrics=${metrics##*_}
 
 case ${metrics} in
 	conferences)
-		stats="conferences participants endpoints_sending_video endpoints_sending_audio inactive_endpoints inactive_conferences"
+		stats="conferences participants videochannels endpoints_sending_video endpoints_sending_audio inactive_endpoints inactive_conferences"
 	;;
 	videostreams)
 		stats="videostreams"
@@ -106,17 +106,17 @@ fi
 
 ########################################################################
 
-[ -f /tmp/jitsi-videobridge_${metrics}.tmp ] && rm /tmp/jitsi-videobridge_${metrics}.tmp
+[ -f /tmp/jitsi_videobridge_${metrics}.tmp ] && rm /tmp/jitsi_videobridge_${metrics}.tmp
 
 for host in ${videobridges} ; do
 
-	echo -e "fetch jitsi-videobridge_${metrics}\nquit" |nc ${host} 4949 |egrep "${stats// /|}" >> /tmp/jitsi-videobridge_${metrics}.tmp
+	echo -e "fetch jitsi_videobridge_${metrics}\nquit" |nc ${host} 4949 |egrep "${stats// /|}" >> /tmp/jitsi_videobridge_${metrics}.tmp
 
 	
 done
 
 for stat in ${stats} ; do
-	r1=$(grep "^${stat}.value " /tmp/jitsi-videobridge_${metrics}.tmp |awk '{print $2}')
+	r1=$(grep "^${stat}.value " /tmp/jitsi_videobridge_${metrics}.tmp |awk '{print $2}')
 	r2=$(echo ${r1} |sed 's/ /+/g')
 	echo "${stat}.value $(( ${r2} ))"
 done
