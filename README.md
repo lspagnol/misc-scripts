@@ -12,4 +12,5 @@
 * **check-cert** => vérification certificat (correspondance clé privée KEY/REQ/CRT)
 * **file-sync** => téléchargement fichier avec contrôle code retour
 * **jitsi-videobridge_** => Plugin Munin pour Jitsi Meet (videobridges)
-* **jitsi-videobridge_summary** => Plugin Munin pour Jitsi Meet (serveur principal cluster)
+* **jitsi-videobridge_summary_** => Plugin Munin pour Jitsi Meet (serveur principal cluster)
+* **onlyoffice-ds_** => Plugin Munin pour OnlyOffice
