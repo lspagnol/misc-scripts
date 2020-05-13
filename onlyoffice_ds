@@ -43,11 +43,11 @@ GPLv2
 # INSTALL:
 #
 #   apt -y install jq curl wget
-#   wget -O onlyoffice_ds https://raw.githubusercontent.com/lspagnol/misc-scripts/master/onlyoffice_ds
-#   chmod +x onlyoffice_ds
+#   wget -O onlyoffice_ https://raw.githubusercontent.com/lspagnol/misc-scripts/master/onlyoffice_documentserver
+#   chmod +x onlyoffice_
 #   mkdir /usr/local/share/munin
-#   cp onlyoffice_ds /usr/local/share/munin
-#   ln -s /usr/local/share/munin/onlyoffice_ds /etc/munin/plugins/onlyoffice_ds
+#   cp onlyoffice_documentserver /usr/local/share/munin
+#   ln -s /usr/local/share/munin/onlyoffice_documentserver /etc/munin/plugins/onlyoffice_documentserver
 #   service munin-node restart
 #
 ########################################################################
@@ -75,8 +75,6 @@ else
 fi
 }
 
-STATS="licenseInfo.connections connectionsStat.hour.edit.max connectionsStat.hour.view.max"
-
 ########################################################################
 
 if [ "$1" = "autoconf" ] ; then
@@ -90,14 +88,15 @@ if [ "${1}" = "config" ] ; then
 
 cat<<EOT
 graph_category onlyoffice
-graph_title Connexions
+graph_title Connexions OnlyOffice Document Server
+graph_info This graph shows the connexions on OnlyOffice Document Server
 graph_args --base 1000 -l 0
 graph_vlabel number
 graph_order connexions_limit connexions_peak_view connexions_peak_edit
+connexions_limit.draw AREA
 connexions_limit.label connexions limit
-connexions_limit.draw area
-connexions_peak_view.label connexions peak (view)
-connexions_peak_edit.label connexions peak (edit)
+connexions_peak_view.label connexions peak view
+connexions_peak_edit.label connexions peak edit
 EOT
 
 exit 0
