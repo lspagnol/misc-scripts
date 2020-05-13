@@ -13,4 +13,4 @@
 * **file-sync** => téléchargement fichier avec contrôle code retour
 * **jitsi-videobridge_** => Plugin Munin pour Jitsi Meet (videobridges)
 * **jitsi-videobridge_summary_** => Plugin Munin pour Jitsi Meet (serveur principal cluster)
-* **onlyoffice-ds_** => Plugin Munin pour OnlyOffice
+* **onlyoffice_ds** => Plugin Munin pour OnlyOffice
